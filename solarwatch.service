@@ -1,0 +1,22 @@
+[Unit]
+Description=SolarWatch Solar Inverter Collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=solarwatch
+Group=solarwatch
+WorkingDirectory=/opt/solarwatch
+ExecStart=/opt/solarwatch/venv/bin/python3 collector.py
+Restart=always
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=solarwatch
+
+# Env file with DB credentials and poll settings
+EnvironmentFile=/opt/solarwatch/.env
+
+[Install]
+WantedBy=multi-user.target
