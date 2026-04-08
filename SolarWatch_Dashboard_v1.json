@@ -103,12 +103,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, battery_soc FROM solar_readings WHERE inverter_name = 'Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, battery_soc\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND battery_soc IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Battery SOC",
-      "type": "gauge"
+      "type": "gauge",
+      "description": "Current battery state of charge as a percentage. Sourced from the battery BMS via the inverter."
     },
     {
       "datasource": {
@@ -175,12 +176,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, battery_voltage FROM solar_readings WHERE inverter_name = 'Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, battery_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND battery_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Battery Voltage",
-      "type": "stat"
+      "type": "stat",
+      "description": "Current battery terminal voltage. Indicates charge level \u2014 fully charged is typically 54\u201355V for a 48V LiFePO4 bank."
     },
     {
       "datasource": {
@@ -247,12 +249,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT MAX(time) as time,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN pv1_power + COALESCE(pv2_power,0) END)\n  + AVG(CASE WHEN inverter_name='Inverter_2' THEN pv1_power + COALESCE(pv2_power,0) END) as total_pv\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \nGROUP BY DATE_TRUNC('minute', time)\nORDER BY 1 DESC LIMIT 1",
+          "rawSql": "SELECT NOW() as time,\n  SUM(avg_pv) as \"Total PV (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(pv1_power + COALESCE(pv2_power,0)) as avg_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nWHERE minute = (SELECT MAX(DATE_TRUNC('minute', time))\n  FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})",
           "refId": "A"
         }
       ],
       "title": "Total Solar Power",
-      "type": "stat"
+      "type": "stat",
+      "description": "Combined solar PV output across all inverters at the latest poll. Sum of all MPPT strings."
     },
     {
       "datasource": {
@@ -319,12 +322,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  MAX(time) as time,\n  SUM(grid_power) as total_grid_power\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  \nGROUP BY DATE_TRUNC('minute', time)\nORDER BY 1 DESC LIMIT 1",
+          "rawSql": "SELECT NOW() as time,\n  SUM(avg_grid) as \"Grid Power (W)\"\nFROM (\n  SELECT inverter_name,\n    AVG(grid_power) as avg_grid\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND time >= (SELECT MAX(DATE_TRUNC('minute', time))\n    FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\n  GROUP BY inverter_name\n) sub",
           "refId": "A"
         }
       ],
       "title": "Grid Power (Combined)",
-      "type": "stat"
+      "type": "stat",
+      "description": "Combined grid power draw across all inverters. Positive = importing from grid."
     },
     {
       "datasource": {
@@ -395,12 +399,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, inverter_temp FROM solar_readings WHERE inverter_name = 'Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, inverter_temp\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_temp IS NOT NULL\nAND inverter_temp < 100\nORDER BY inverter_name ASC, time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inverter 1 Temp",
-      "type": "stat"
+      "type": "stat",
+      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40\u201375\u00b0C."
     },
     {
       "datasource": {
@@ -467,12 +472,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(max_pv) as today_pv\nFROM (\n  SELECT inverter_name, MAX(daily_pv_energy) as max_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy BETWEEN 0.01 AND 9000\n  GROUP BY inverter_name\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  SUM(max_pv) as \"Today PV (kWh)\"\nFROM (\n  SELECT inverter_name, MAX(daily_pv_energy) as max_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy BETWEEN 0.01 AND 9000\n  GROUP BY inverter_name\n) sub",
           "refId": "A"
         }
       ],
       "title": "Today PV Energy",
-      "type": "stat"
+      "type": "stat",
+      "description": "Total solar energy generated today across all inverters. Resets at midnight."
     },
     {
       "datasource": {
@@ -508,7 +514,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyZAR"
         },
         "overrides": []
       },
@@ -544,12 +550,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  NOW() as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as grid_cost_rand\nFROM (\n  SELECT MAX(daily_grid_import) as kwh\n  FROM solar_readings\n  WHERE inverter_name = 'Inverter_1'\n  AND time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg'\n  AND daily_grid_import BETWEEN 0.01 AND 9000\n  AND site_name ILIKE ${site:singlequote}\n) t",
+          "rawSql": "SELECT NOW() as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                    100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as \"Grid Cost (R)\"\nFROM (\n  SELECT COALESCE(MAX(daily_grid_import), 0) as kwh\n  FROM solar_readings\n  WHERE inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\n  AND time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg'\n  AND daily_grid_import BETWEEN 0.01 AND 9000\n  AND site_name ILIKE ${site:singlequote}\n) t",
           "refId": "A"
         }
       ],
       "title": "Today Grid Cost",
-      "type": "stat"
+      "type": "stat",
+      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate \u2014 switchable via the Cost Calc Mode dropdown."
     },
     {
       "datasource": {
@@ -619,12 +626,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  ROUND(\n    CASE WHEN load_kwh > 0\n    THEN LEAST(100, GREATEST(0, (1 - grid_kwh / NULLIF(load_kwh, 0)) * 100))\n    ELSE 0 END\n  ::numeric, 1) as self_sufficiency_pct\nFROM (\n  SELECT\n    COALESCE(MAX(daily_load_energy), 1) as load_kwh,\n    COALESCE(MAX(daily_grid_import), 0) as grid_kwh\n  FROM solar_readings\n  WHERE inverter_name = 'Inverter_1'\n  AND time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg'\n  AND daily_load_energy > 0\n  AND daily_load_energy < 9000\n  AND daily_grid_import < 9000\n  AND site_name ILIKE ${site:singlequote}\n) t",
+          "rawSql": "SELECT NOW() as time,\n  ROUND(\n    CASE WHEN load_kwh > 0\n    THEN LEAST(100, GREATEST(0, (1 - grid_kwh / NULLIF(load_kwh, 0)) * 100))\n    ELSE 0 END\n  ::numeric, 1) as \"Self Sufficiency (%)\"\nFROM (\n  SELECT\n    COALESCE(SUM(max_load), 1) as load_kwh,\n    COALESCE(MAX(max_grid), 0) as grid_kwh\n  FROM (\n    SELECT inverter_name,\n      MAX(daily_load_energy) as max_load,\n      MAX(daily_grid_import) as max_grid\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    AND daily_load_energy > 0\n    AND daily_load_energy < 9000\n    AND daily_grid_import < 9000\n    GROUP BY inverter_name\n  ) inv\n) t",
           "refId": "A"
         }
       ],
       "title": "Self-Sufficiency Today",
-      "type": "gauge"
+      "type": "gauge",
+      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 \u2212 grid_import \u00f7 total_load) \u00d7 100."
     },
     {
       "datasource": {
@@ -695,12 +703,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, battery_temp FROM solar_readings WHERE inverter_name = 'Inverter_1' AND battery_temp IS NOT NULL AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, battery_temp\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND battery_temp IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Battery Temp",
-      "type": "stat"
+      "type": "stat",
+      "description": "Battery pack temperature reported by the BMS. High temperatures (>45\u00b0C) may indicate heavy charge/discharge cycles."
     },
     {
       "datasource": {
@@ -771,12 +780,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT MAX(time) as time,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN load_power END)\n  + AVG(CASE WHEN inverter_name='Inverter_2' THEN load_power END) as total_load\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \nGROUP BY DATE_TRUNC('minute', time)\nORDER BY 1 DESC LIMIT 1",
+          "rawSql": "SELECT NOW() as time,\n  SUM(avg_load) as \"Total Load (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(load_power) as avg_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nWHERE minute = (SELECT MAX(DATE_TRUNC('minute', time))\n  FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})",
           "refId": "A"
         }
       ],
       "title": "Total Load",
-      "type": "stat"
+      "type": "stat",
+      "description": "Total load power being consumed across all inverters at the latest poll."
     },
     {
       "datasource": {
@@ -847,12 +857,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, grid_voltage FROM solar_readings WHERE inverter_name = 'Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, grid_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND grid_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Grid Voltage",
-      "type": "stat"
+      "type": "stat",
+      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220\u2013240V."
     },
     {
       "datasource": {
@@ -923,12 +934,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, inverter_temp FROM solar_readings WHERE inverter_name = 'Inverter_2' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, inverter_temp\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_temp IS NOT NULL\nAND inverter_temp < 100\nORDER BY inverter_name DESC, time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inverter 2 Temp",
-      "type": "stat"
+      "type": "stat",
+      "description": "Internal temperature of the second inverter's power stage."
     },
     {
       "datasource": {
@@ -995,12 +1007,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, daily_load_energy FROM solar_readings WHERE inverter_name = 'Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT NOW() as time, SUM(max_load) as \"Today Load (kWh)\"\nFROM (\n  SELECT inverter_name, MAX(daily_load_energy) as max_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_load_energy BETWEEN 0.01 AND 9000\n  GROUP BY inverter_name\n) sub",
           "refId": "A"
         }
       ],
       "title": "Today Load Energy",
-      "type": "stat"
+      "type": "stat",
+      "description": "Total load energy consumed today across all inverters. Resets at midnight."
     },
     {
       "datasource": {
@@ -1032,7 +1045,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyZAR"
         },
         "overrides": []
       },
@@ -1068,12 +1081,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  NOW() as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((pv_kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN pv_kwh <= 0   THEN 0\n          WHEN pv_kwh <= 100 THEN pv_kwh * 2.9790\n          WHEN pv_kwh <= 400 THEN 100*2.9790 + (pv_kwh-100)*3.4864\n          WHEN pv_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (pv_kwh-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (pv_kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as solar_savings_rand\nFROM (\n  SELECT SUM(max_pv) as pv_kwh\n  FROM (\n    SELECT inverter_name, MAX(daily_pv_energy) as max_pv\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    AND daily_pv_energy BETWEEN 0.01 AND 9000\n    GROUP BY inverter_name\n  ) inv\n) t",
+          "rawSql": "SELECT\n  NOW() as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((pv_kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN pv_kwh <= 0   THEN 0\n          WHEN pv_kwh <= 100 THEN pv_kwh * 2.9790\n          WHEN pv_kwh <= 400 THEN 100*2.9790 + (pv_kwh-100)*3.4864\n          WHEN pv_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (pv_kwh-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (pv_kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as \"Solar Savings (R)\"\nFROM (\n  SELECT SUM(max_pv) as pv_kwh\n  FROM (\n    SELECT inverter_name, MAX(daily_pv_energy) as max_pv\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    AND daily_pv_energy BETWEEN 0.01 AND 9000\n    GROUP BY inverter_name\n  ) inv\n) t",
           "refId": "A"
         }
       ],
       "title": "Today Solar Savings",
-      "type": "stat"
+      "type": "stat",
+      "description": "Estimated savings from solar generation today \u2014 the cost you avoided by not importing this energy from the grid."
     },
     {
       "collapsed": false,
@@ -1095,122 +1109,14 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "unit": "watt",
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
             "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "watt"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "inv1_pv"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Inverter 1 PV"
-              },
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#F5A623",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "inv2_pv"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Inverter 2 PV"
-              },
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FFD700",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "total_pv"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Total PV"
-              },
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FF8C00",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 3
-              }
-            ]
+            "fillOpacity": 15,
+            "spanNulls": true
           }
-        ]
+        },
+        "overrides": []
       },
       "gridPos": {
         "x": 0,
@@ -1240,12 +1146,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN pv1_power + COALESCE(pv2_power,0) END) as inv1_pv,\n  AVG(CASE WHEN inverter_name='Inverter_2' THEN pv1_power + COALESCE(pv2_power,0) END) as inv2_pv,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN pv1_power + COALESCE(pv2_power,0) END)\n  + AVG(CASE WHEN inverter_name='Inverter_2' THEN pv1_power + COALESCE(pv2_power,0) END) as total_pv\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(pv1_power + COALESCE(pv2_power,0)) as \"PV Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "Solar PV Power \u2014 Both Inverters",
-      "type": "timeseries"
+      "title": "Solar PV Power \u2014 Per Inverter",
+      "type": "timeseries",
+      "description": "Solar PV power output over time, one line per inverter. Shows generation profile throughout the day."
     },
     {
       "datasource": {
@@ -1392,12 +1299,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN battery_soc END) as battery_soc,\n  (AVG(CASE WHEN inverter_name='Inverter_1' THEN battery_power END)\n  + AVG(CASE WHEN inverter_name='Inverter_2' THEN battery_power END)) * -1 as total_batt_power\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  minute AS time,\n  AVG(soc)         as \"SOC (%)\",\n  SUM(avg_batt) * -1 as \"Battery Power (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(battery_soc)   as soc,\n    AVG(battery_power) as avg_batt\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nGROUP BY minute ORDER BY minute",
           "refId": "A"
         }
       ],
       "title": "Battery Power & SOC",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Battery charge/discharge power (positive = charging, negative = discharging) and state of charge percentage over time."
     },
     {
       "datasource": {
@@ -1406,122 +1314,14 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "unit": "watt",
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
             "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "watt"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "inv1_load"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Inverter 1 Load"
-              },
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#E05252",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "inv2_load"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Inverter 2 Load"
-              },
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#FF7383",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "total_load"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Total Load"
-              },
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#C4162A",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 3
-              }
-            ]
+            "fillOpacity": 15,
+            "spanNulls": true
           }
-        ]
+        },
+        "overrides": []
       },
       "gridPos": {
         "x": 0,
@@ -1551,12 +1351,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN load_power END) as inv1_load,\n  AVG(CASE WHEN inverter_name='Inverter_2' THEN load_power END) as inv2_load,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN load_power END)\n  + AVG(CASE WHEN inverter_name='Inverter_2' THEN load_power END) as total_load\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(load_power) as \"Load Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "Load Power \u2014 Both Inverters",
-      "type": "timeseries"
+      "title": "Load Power \u2014 Per Inverter",
+      "type": "timeseries",
+      "description": "Load power consumption over time, one line per inverter."
     },
     {
       "datasource": {
@@ -1695,12 +1496,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN grid_power END)\n  + AVG(CASE WHEN inverter_name='Inverter_2' THEN grid_power END) as grid_power,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN grid_voltage END) as grid_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  minute AS time,\n  SUM(avg_grid)    as \"Grid Power (W)\",\n  AVG(avg_voltage) as \"Grid Voltage (V)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(grid_power)   as avg_grid,\n    AVG(grid_voltage) as avg_voltage\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nGROUP BY minute ORDER BY minute",
           "refId": "A"
         }
       ],
       "title": "Grid Power & Voltage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Combined grid power draw (W) and grid voltage (V) over time. Power near zero indicates the system is running on solar/battery."
     },
     {
       "datasource": {
@@ -1806,12 +1608,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(grid_frequency) as grid_frequency\nFROM solar_readings\nWHERE inverter_name = 'Inverter_1'\nAND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  \nAND grid_frequency BETWEEN 45 AND 55\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(grid_frequency) as \"Grid Frequency (Hz)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND grid_frequency BETWEEN 45 AND 55\nGROUP BY 1 ORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Grid Frequency \u2014 Eskom Quality",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Grid frequency over time. Eskom nominal is 50Hz. Deviations indicate grid instability."
     },
     {
       "datasource": {
@@ -1999,12 +1802,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name='Inverter_1' AND inverter_temp < 100 THEN inverter_temp END) as inv1_temp,\n  AVG(CASE WHEN inverter_name='Inverter_2' AND inverter_temp < 100 THEN inverter_temp END) as inv2_temp,\n  AVG(CASE WHEN inverter_name='Inverter_1' AND battery_temp IS NOT NULL AND battery_temp > 0 THEN battery_temp END) as batt_temp,\n  AVG(CASE WHEN inverter_name='Inverter_1' AND dc_temp < 100 THEN dc_temp END) as inv1_dc_temp,\n  AVG(CASE WHEN inverter_name='Inverter_2' AND dc_temp < 100 THEN dc_temp END) as inv2_dc_temp\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(CASE WHEN inverter_temp < 100 THEN inverter_temp END) as \"Inverter Temp (\u00b0C)\",\n  AVG(CASE WHEN dc_temp < 100 THEN dc_temp END)             as \"DC Temp (\u00b0C)\",\n  AVG(CASE WHEN battery_temp IS NOT NULL AND battery_temp > 0 THEN battery_temp END) as \"Battery Temp (\u00b0C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Inverter Temperatures",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Inverter and DC heatsink temperatures over time for all inverters, plus battery temperature."
     },
     {
       "collapsed": false,
@@ -2073,7 +1877,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyZAR"
         },
         "overrides": []
       },
@@ -2115,12 +1919,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "table",
-          "rawSql": "WITH daily AS (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n    MAX(daily_grid_import) as kwh\n  FROM solar_readings\n  WHERE inverter_name = 'Inverter_1'\n  AND site_name ILIKE ${site:singlequote}\n  AND time > NOW() - INTERVAL '14 days'\n  AND daily_grid_import BETWEEN 0.01 AND 9000\n  GROUP BY 1\n)\nSELECT\n  day,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as grid_cost_rand\nFROM daily ORDER BY day",
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n    MAX(daily_grid_import) as kwh\n  FROM solar_readings\n  WHERE inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\n  AND site_name ILIKE ${site:singlequote}\n  AND time > NOW() - INTERVAL '14 days'\n  AND daily_grid_import BETWEEN 0.01 AND 9000\n  GROUP BY 1\n)\nSELECT day, CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                    100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as \"Grid Cost (R)\"\nFROM daily ORDER BY day",
           "refId": "A"
         }
       ],
       "title": "Daily Grid Cost \u2014 Last 14 Days",
-      "type": "barchart"
+      "type": "barchart",
+      "description": "Daily grid electricity cost for the last 14 days. Calculated from daily_grid_import counter using selected tariff mode."
     },
     {
       "datasource": {
@@ -2172,7 +1977,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyZAR"
         },
         "overrides": []
       },
@@ -2219,7 +2024,8 @@
         }
       ],
       "title": "Daily Solar Savings \u2014 Last 14 Days",
-      "type": "barchart"
+      "type": "barchart",
+      "description": "Daily solar savings for the last 14 days \u2014 the cost of electricity you generated yourself instead of buying from the grid."
     },
     {
       "datasource": {
@@ -2280,7 +2086,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyZAR"
         },
         "overrides": [
           {
@@ -2343,7 +2149,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "WITH daily AS (\n  SELECT\n    day,\n    SUM(CASE WHEN type='grid' THEN val ELSE 0 END) as grid_kwh,\n    SUM(CASE WHEN type='pv'   THEN val ELSE 0 END) as pv_kwh\n  FROM (\n    SELECT\n      DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n      'grid' as type,\n      MAX(daily_grid_import) as val\n    FROM solar_readings\n    WHERE inverter_name = 'Inverter_1'\n    AND site_name ILIKE ${site:singlequote}\n    AND time > NOW() - INTERVAL '30 days'\n    AND daily_grid_import BETWEEN 0.01 AND 500\n    GROUP BY 1, 2\n    UNION ALL\n    SELECT\n      DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n      'pv' as type,\n      MAX(daily_pv_energy) as val\n    FROM solar_readings\n    WHERE time > NOW() - INTERVAL '30 days'\n    AND site_name ILIKE ${site:singlequote}\n    AND daily_pv_energy BETWEEN 0.01 AND 500\n    GROUP BY 1, 2\n  ) src\n  GROUP BY day\n)\nSELECT\n  day::timestamp + INTERVAL '12 hours' as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((grid_kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN grid_kwh <= 0   THEN 0\n          WHEN grid_kwh <= 100 THEN grid_kwh * 2.9790\n          WHEN grid_kwh <= 400 THEN 100*2.9790 + (grid_kwh-100)*3.4864\n          WHEN grid_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (grid_kwh-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (grid_kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as \"Grid Cost (R)\",\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((pv_kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN pv_kwh <= 0   THEN 0\n          WHEN pv_kwh <= 100 THEN pv_kwh * 2.9790\n          WHEN pv_kwh <= 400 THEN 100*2.9790 + (pv_kwh-100)*3.4864\n          WHEN pv_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (pv_kwh-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (pv_kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END   as \"Solar Savings (R)\"\nFROM daily ORDER BY day",
+          "rawSql": "WITH daily AS (\n  SELECT\n    day,\n    SUM(CASE WHEN type='grid' THEN val ELSE 0 END) as grid_kwh,\n    SUM(CASE WHEN type='pv'   THEN val ELSE 0 END) as pv_kwh\n  FROM (\n    SELECT\n      DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n      'grid' as type,\n      MAX(daily_grid_import) as val\n    FROM solar_readings\n    WHERE inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n      WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\n    AND site_name ILIKE ${site:singlequote}\n    AND time > NOW() - INTERVAL '30 days'\n    AND daily_grid_import BETWEEN 0.01 AND 500\n    GROUP BY 1, 2\n    UNION ALL\n    SELECT\n      DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n      'pv' as type,\n      MAX(daily_pv_energy) as val\n    FROM solar_readings\n    WHERE time > NOW() - INTERVAL '30 days'\n    AND site_name ILIKE ${site:singlequote}\n    AND daily_pv_energy BETWEEN 0.01 AND 500\n    GROUP BY 1, 2\n  ) src\n  GROUP BY day\n)\nSELECT\n  day::timestamp + INTERVAL '12 hours' as time,\n  CASE\n    WHEN '${calc_mode}' = 'flat' THEN ROUND((grid_kwh * ${rate}::numeric)::numeric, 2)\n    ELSE ROUND((CASE\n      WHEN grid_kwh <= 0   THEN 0\n      WHEN grid_kwh <= 100 THEN grid_kwh * 2.9790\n      WHEN grid_kwh <= 400 THEN 100*2.9790 + (grid_kwh-100)*3.4864\n      WHEN grid_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (grid_kwh-400)*3.7983\n      ELSE 100*2.9790 + 300*3.4864 + 250*3.7983 + (grid_kwh-650)*4.0948\n    END * 1.15)::numeric, 2)\n  END as \"Grid Cost (R)\",\n  CASE\n    WHEN '${calc_mode}' = 'flat' THEN ROUND((pv_kwh * ${rate}::numeric)::numeric, 2)\n    ELSE ROUND((CASE\n      WHEN pv_kwh <= 0   THEN 0\n      WHEN pv_kwh <= 100 THEN pv_kwh * 2.9790\n      WHEN pv_kwh <= 400 THEN 100*2.9790 + (pv_kwh-100)*3.4864\n      WHEN pv_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (pv_kwh-400)*3.7983\n      ELSE 100*2.9790 + 300*3.4864 + 250*3.7983 + (pv_kwh-650)*4.0948\n    END * 1.15)::numeric, 2)\n  END as \"Solar Savings (R)\"\nFROM daily ORDER BY day",
           "refId": "A",
           "timeFrom": null,
           "timeShift": null
@@ -2352,7 +2158,8 @@
       "title": "Daily Grid Cost vs Solar Savings \u2014 Last 30 Days",
       "type": "timeseries",
       "timeFrom": null,
-      "timeShift": null
+      "timeShift": null,
+      "description": "30-day comparison of actual grid cost vs solar savings. Shows the financial value of the solar installation over time."
     },
     {
       "collapsed": false,
@@ -2523,12 +2330,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "table",
-          "rawSql": "SELECT\n  (DATE(time AT TIME ZONE 'Africa/Johannesburg'))::timestamp as time,\n  DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n  MAX(daily_pv_energy)         as \"PV Generated\",\n  MAX(daily_load_energy)       as \"Load Consumed\",\n  MAX(daily_grid_import)       as \"Grid Import\",\n  MAX(daily_battery_charge)    as \"Batt Charge\",\n  MAX(daily_battery_discharge) as \"Batt Discharge\"\nFROM solar_readings\nWHERE inverter_name = 'Inverter_1'\nAND site_name ILIKE ${site:singlequote}\nAND time > NOW() - INTERVAL '14 days'\nGROUP BY 1, 2 ORDER BY 1",
+          "rawSql": "SELECT\n  (DATE(time AT TIME ZONE 'Africa/Johannesburg'))::timestamp as time,\n  DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n  MAX(daily_pv_energy)         as \"PV Generated\",\n  MAX(daily_load_energy)       as \"Load Consumed\",\n  MAX(daily_grid_import)       as \"Grid Import\",\n  MAX(daily_battery_charge)    as \"Batt Charge\",\n  MAX(daily_battery_discharge) as \"Batt Discharge\"\nFROM solar_readings\nWHERE inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND site_name ILIKE ${site:singlequote}\nAND time > NOW() - INTERVAL '14 days'\nAND daily_pv_energy IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Daily Energy \u2014 Inverter 1 (Last 14 Days)",
-      "type": "barchart"
+      "type": "barchart",
+      "description": "Daily energy counters for the first inverter over the last 14 days."
     },
     {
       "datasource": {
@@ -2686,12 +2494,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "table",
-          "rawSql": "SELECT\n  (DATE(time AT TIME ZONE 'Africa/Johannesburg'))::timestamp as time,\n  DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n  MAX(daily_pv_energy)         as \"PV Generated\",\n  MAX(daily_load_energy)       as \"Load Consumed\",\n  MAX(daily_grid_import)       as \"Grid Import\",\n  MAX(daily_battery_charge)    as \"Batt Charge\",\n  MAX(daily_battery_discharge) as \"Batt Discharge\"\nFROM solar_readings\nWHERE inverter_name = 'Inverter_2'\nAND site_name ILIKE ${site:singlequote}\nAND time > NOW() - INTERVAL '14 days'\nGROUP BY 1, 2 ORDER BY 1",
+          "rawSql": "SELECT\n  (DATE(time AT TIME ZONE 'Africa/Johannesburg'))::timestamp as time,\n  DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n  MAX(daily_pv_energy)         as \"PV Generated\",\n  MAX(daily_load_energy)       as \"Load Consumed\",\n  MAX(daily_battery_charge)    as \"Batt Charge\",\n  MAX(daily_battery_discharge) as \"Batt Discharge\"\nFROM solar_readings\nWHERE inverter_name = (SELECT MAX(inverter_name) FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1)\nAND site_name ILIKE ${site:singlequote}\nAND time > NOW() - INTERVAL '14 days'\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Daily Energy \u2014 Inverter 2 (Last 14 Days)",
-      "type": "barchart"
+      "type": "barchart",
+      "description": "Daily energy counters for the second inverter over the last 14 days. Grid Import not shown as it is always zero for slave inverters in a parallel configuration."
     },
     {
       "collapsed": false,
@@ -2983,7 +2792,8 @@
         }
       ],
       "title": "Latest Readings",
-      "type": "table"
+      "type": "table",
+      "description": "Latest 50 raw readings from the database, newest first. Shows live values directly from inverter Modbus registers."
     },
     {
       "collapsed": false,
@@ -3063,12 +2873,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(inv1_pv + COALESCE(inv2_pv,0)), 0) as peak_pv_w\nFROM (\n  SELECT\n    DATE_TRUNC('minute', time) as t,\n    AVG(CASE WHEN inverter_name='Inverter_1' THEN pv1_power + COALESCE(pv2_power,0) END) as inv1_pv,\n    AVG(CASE WHEN inverter_name='Inverter_2' THEN pv1_power + COALESCE(pv2_power,0) END) as inv2_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \n  GROUP BY 1\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak PV (W)\"\nFROM (\n  SELECT ts, SUM(avg_pv) as minute_total\n  FROM (\n    SELECT\n      DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(pv1_power + COALESCE(pv2_power, 0)) as avg_pv\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    AND pv1_power > 0\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
           "refId": "A"
         }
       ],
       "title": "Peak Solar Today",
-      "type": "stat"
+      "type": "stat",
+      "description": "Peak combined solar output recorded today across all inverters."
     },
     {
       "datasource": {
@@ -3139,12 +2950,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(inv1_load + COALESCE(inv2_load,0)), 0) as peak_load_w\nFROM (\n  SELECT\n    DATE_TRUNC('minute', time) as t,\n    AVG(CASE WHEN inverter_name='Inverter_1' THEN load_power END) as inv1_load,\n    AVG(CASE WHEN inverter_name='Inverter_2' THEN load_power END) as inv2_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  \n  GROUP BY 1\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak Load (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as ts,\n    SUM(avg_load) as minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(load_power) as avg_load\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
           "refId": "A"
         }
       ],
       "title": "Peak Load Today",
-      "type": "stat"
+      "type": "stat",
+      "description": "Peak combined load recorded today across all inverters."
     },
     {
       "datasource": {
@@ -3211,12 +3023,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COUNT(*) as failed_polls\nFROM solar_readings\nWHERE time > NOW() - INTERVAL '1 hour'\nAND site_name ILIKE ${site:singlequote}\nAND poll_success = false",
+          "rawSql": "SELECT NOW() as time,\n  COUNT(*) as \"Failed Polls\"\nFROM solar_readings\nWHERE time > NOW() - INTERVAL '1 hour'\nAND site_name ILIKE ${site:singlequote}\nAND poll_success = false",
           "refId": "A"
         }
       ],
       "title": "Poll Failures (Last Hour)",
-      "type": "stat"
+      "type": "stat",
+      "description": "Number of failed poll attempts in the last hour. Non-zero values indicate connectivity issues to inverter dongles."
     },
     {
       "datasource": {
@@ -3283,12 +3096,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(daily_pv) as month_pv_kwh\nFROM (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    inverter_name,\n    MAX(daily_pv_energy) as daily_pv\n  FROM solar_readings\n  WHERE DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy BETWEEN 0.01 AND 9000\n  GROUP BY 1, 2\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  SUM(daily_pv) as \"PV Generated (kWh)\"\nFROM (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    inverter_name,\n    MAX(daily_pv_energy) as daily_pv\n  FROM solar_readings\n  WHERE DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy BETWEEN 0.01 AND 9000\n  GROUP BY 1, 2\n) sub",
           "refId": "A"
         }
       ],
       "title": "This Month \u2014 PV Generated",
-      "type": "stat"
+      "type": "stat",
+      "description": "Total solar energy generated this calendar month across all inverters."
     },
     {
       "datasource": {
@@ -3323,7 +3137,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyZAR"
         },
         "overrides": []
       },
@@ -3359,12 +3173,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END) as month_grid_cost\nFROM (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    MAX(daily_grid_import) as kwh\n  FROM solar_readings\n  WHERE inverter_name = 'Inverter_1'\n  AND site_name ILIKE ${site:singlequote}\n  AND DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND daily_grid_import BETWEEN 0.01 AND 9000\n  GROUP BY 1\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  SUM(CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                    100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END) as \"Grid Cost (R)\"\nFROM (\n  SELECT DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    MAX(daily_grid_import) as kwh\n  FROM solar_readings\n  WHERE inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\n  AND site_name ILIKE ${site:singlequote}\n  AND DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND daily_grid_import BETWEEN 0.01 AND 9000\n  GROUP BY 1\n) sub",
           "refId": "A"
         }
       ],
       "title": "This Month \u2014 Grid Cost",
-      "type": "stat"
+      "type": "stat",
+      "description": "Total grid electricity cost this calendar month using selected tariff."
     },
     {
       "datasource": {
@@ -3395,7 +3210,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyZAR"
         },
         "overrides": []
       },
@@ -3431,12 +3246,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((pv * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN pv <= 0   THEN 0\n          WHEN pv <= 100 THEN pv * 2.9790\n          WHEN pv <= 400 THEN 100*2.9790 + (pv-100)*3.4864\n          WHEN pv <= 650 THEN 100*2.9790 + 300*3.4864 + (pv-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (pv-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END) as month_solar_savings\nFROM (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    inverter_name,\n    MAX(daily_pv_energy) as pv\n  FROM solar_readings\n  WHERE DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy BETWEEN 0.01 AND 9000\n  GROUP BY 1, 2\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  SUM(CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((pv * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN pv <= 0   THEN 0\n          WHEN pv <= 100 THEN pv * 2.9790\n          WHEN pv <= 400 THEN 100*2.9790 + (pv-100)*3.4864\n          WHEN pv <= 650 THEN 100*2.9790 + 300*3.4864 + (pv-400)*3.7983\n          ELSE                        100*2.9790 + 300*3.4864 + 250*3.7983 + (pv-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END) as \"Solar Savings (R)\"\nFROM (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    inverter_name,\n    MAX(daily_pv_energy) as pv\n  FROM solar_readings\n  WHERE DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy BETWEEN 0.01 AND 9000\n  GROUP BY 1, 2\n) sub",
           "refId": "A"
         }
       ],
       "title": "This Month \u2014 Solar Savings",
-      "type": "stat"
+      "type": "stat",
+      "description": "Total solar savings this calendar month \u2014 electricity cost avoided through solar generation."
     },
     {
       "datasource": {
@@ -3590,12 +3406,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN grid_power END) as inv1_grid,\n  AVG(CASE WHEN inverter_name='Inverter_2' THEN grid_power END) as inv2_grid,\n  AVG(CASE WHEN inverter_name='Inverter_1' THEN grid_power END)\n  + AVG(CASE WHEN inverter_name='Inverter_2' THEN grid_power END) as total_grid\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(grid_power) as \"Grid Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "Grid Power Per Inverter",
-      "type": "timeseries"
+      "title": "Grid Power \u2014 Per Inverter",
+      "type": "timeseries",
+      "description": "Grid power draw per inverter over time. Useful for diagnosing unbalanced loading between inverters."
     },
     {
       "datasource": {
@@ -3723,12 +3540,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "table",
-          "rawSql": "SELECT\n  DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n  MAX(daily_battery_charge) as charge_kwh,\n  MAX(daily_battery_discharge) as discharge_kwh\nFROM solar_readings\nWHERE inverter_name = 'Inverter_1'\nAND site_name ILIKE ${site:singlequote}\nAND time > NOW() - INTERVAL '14 days'\nAND daily_battery_charge < 9000\nAND daily_battery_discharge < 9000\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n  MAX(daily_battery_charge) as \"Charged (kWh)\",\n  MAX(daily_battery_discharge) as \"Discharged (kWh)\"\nFROM solar_readings\nWHERE inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND site_name ILIKE ${site:singlequote}\nAND time > NOW() - INTERVAL '14 days'\nAND daily_battery_charge < 9000\nAND daily_battery_charge IS NOT NULL\nAND daily_battery_discharge IS NOT NULL\nAND daily_battery_discharge < 9000\nGROUP BY 1 ORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Daily Battery Balance (Charge vs Discharge)",
-      "type": "barchart"
+      "type": "barchart",
+      "description": "Daily battery charge vs discharge balance for the last 14 days. Green = charged into battery, Blue = discharged from battery."
     },
     {
       "collapsed": false,
@@ -3808,12 +3626,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv1_voltage FROM solar_readings WHERE inverter_name='Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv1_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv1_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 1 \u2014 PV1 Voltage",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 1 voltage for the first inverter."
     },
     {
       "datasource": {
@@ -3880,12 +3699,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv1_current FROM solar_readings WHERE inverter_name='Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv1_current\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv1_current IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 1 \u2014 PV1 Current",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 1 current for the first inverter."
     },
     {
       "datasource": {
@@ -3952,12 +3772,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv1_power FROM solar_readings WHERE inverter_name='Inverter_1' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   AND pv1_power >= 0 ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv1_power\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv1_power IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 1 \u2014 PV1 Power",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 1 power for the first inverter."
     },
     {
       "datasource": {
@@ -4024,12 +3845,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv1_voltage FROM solar_readings WHERE inverter_name='Inverter_2' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv1_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_name = (SELECT MAX(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv1_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 2 \u2014 PV1 Voltage",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 1 voltage for the second inverter."
     },
     {
       "datasource": {
@@ -4096,12 +3918,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv1_current FROM solar_readings WHERE inverter_name='Inverter_2' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv1_current\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_name = (SELECT MAX(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv1_current IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 2 \u2014 PV1 Current",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 1 current for the second inverter."
     },
     {
       "datasource": {
@@ -4168,12 +3991,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv1_power FROM solar_readings WHERE inverter_name='Inverter_2' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   AND pv1_power >= 0 ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv1_power\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_name = (SELECT MAX(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv1_power IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 2 \u2014 PV1 Power",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 1 power for the second inverter."
     },
     {
       "datasource": {
@@ -4240,12 +4064,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv2_voltage FROM solar_readings WHERE inverter_name='Inverter_2' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv2_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_name = (SELECT MAX(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv2_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 2 \u2014 PV2 Voltage",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 2 voltage for the second inverter. Low voltage (< 20V) indicates string is inactive or shaded."
     },
     {
       "datasource": {
@@ -4312,12 +4137,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv2_current FROM solar_readings WHERE inverter_name='Inverter_2' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv2_current\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_name = (SELECT MAX(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv2_current IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 2 \u2014 PV2 Current",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 2 current for the second inverter."
     },
     {
       "datasource": {
@@ -4384,12 +4210,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  NOW() as time,\n  pv2_voltage as value,\n  'Inv 1 PV2 V' as metric\nFROM solar_readings\nWHERE inverter_name = 'Inverter_1'\nAND site_name ILIKE ${site:singlequote}\nORDER BY time DESC\nLIMIT 1",
+          "rawSql": "SELECT time, pv2_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv2_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 1 \u2014 PV2 Voltage",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 2 voltage for the first inverter."
     },
     {
       "datasource": {
@@ -4456,12 +4283,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  NOW() as time,\n  pv2_current as value,\n  'Inv 1 PV2 A' as metric\nFROM solar_readings\nWHERE inverter_name = 'Inverter_1'\nAND site_name ILIKE ${site:singlequote}\nORDER BY time DESC\nLIMIT 1",
+          "rawSql": "SELECT time, pv2_current\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv2_current IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 1 \u2014 PV2 Current",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 2 current for the first inverter."
     },
     {
       "datasource": {
@@ -4528,12 +4356,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  NOW() as time,\n  pv2_power as value,\n  'Inv 1 PV2 W' as metric\nFROM solar_readings\nWHERE inverter_name = 'Inverter_1'\nAND site_name ILIKE ${site:singlequote}\nORDER BY time DESC\nLIMIT 1",
+          "rawSql": "SELECT time, pv2_power\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv2_power IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 1 \u2014 PV2 Power",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 2 power for the first inverter."
     },
     {
       "datasource": {
@@ -4600,12 +4429,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, pv2_power FROM solar_readings WHERE inverter_name='Inverter_2' AND $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n   AND pv2_power >= 0 ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, pv2_power\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_name = (SELECT MAX(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND pv2_power IS NOT NULL\nORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
       "title": "Inv 2 \u2014 PV2 Power",
-      "type": "stat"
+      "type": "stat",
+      "description": "Live PV string 2 power for the second inverter."
     },
     {
       "datasource": {
@@ -4778,12 +4608,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name = 'Inverter_1' THEN pv1_power ELSE NULL END) as \"Inv 1 PV1\",\n  AVG(CASE WHEN inverter_name = 'Inverter_1' THEN pv2_power ELSE NULL END) as \"Inv 1 PV2\",\n  AVG(CASE WHEN inverter_name = 'Inverter_2' THEN pv1_power ELSE NULL END) as \"Inv 2 PV1\",\n  AVG(CASE WHEN inverter_name = 'Inverter_2' THEN pv2_power ELSE NULL END) as \"Inv 2 PV2\"\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 1' as \"String\",\n  AVG(NULLIF(pv1_power, 0)) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 2' as \"String\",\n  AVG(CASE WHEN pv2_power > 0 THEN pv2_power END) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_power > 0\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "PV String Power \u2014 All Active Strings",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "PV string power output over time for all active strings. Useful for comparing string performance and detecting underperformance."
     },
     {
       "datasource": {
@@ -4933,12 +4764,13 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(CASE WHEN inverter_name = 'Inverter_1' THEN pv1_voltage ELSE NULL END) as \"Inv 1 PV1\",\n  AVG(CASE WHEN inverter_name = 'Inverter_1' THEN pv2_voltage ELSE NULL END) as \"Inv 1 PV2\",\n  AVG(CASE WHEN inverter_name = 'Inverter_2' THEN pv1_voltage ELSE NULL END) as \"Inv 2 PV1\",\n  AVG(CASE WHEN inverter_name = 'Inverter_2' THEN pv2_voltage ELSE NULL END) as \"Inv 2 PV2\"\nFROM solar_readings\nWHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote} \nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 1' as \"String\",\n  AVG(NULLIF(pv1_voltage, 0)) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 2' as \"String\",\n  AVG(CASE WHEN pv2_voltage > 10 THEN pv2_voltage END) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_voltage > 10\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "PV String Voltages \u2014 All Active Strings",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "PV string voltages over time for all active strings. Voltage drops indicate shading, cloud cover, or end of day."
     },
     {
       "id": 312,
@@ -5093,10 +4925,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "table",
-          "rawSql": "SELECT\n  day::date::timestamp as time,\n  day,\n  SUM(max_pv)          as \"PV Generated\",\n  SUM(max_load)        as \"Load Consumed\",\n  SUM(max_grid)        as \"Grid Import\",\n  SUM(max_batt_charge) as \"Batt Charge\",\n  SUM(max_batt_dis)    as \"Batt Discharge\"\nFROM (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n    inverter_name,\n    MAX(daily_pv_energy)         as max_pv,\n    MAX(daily_load_energy)       as max_load,\n    MAX(daily_grid_import)       as max_grid,\n    MAX(daily_battery_charge)    as max_batt_charge,\n    MAX(daily_battery_discharge) as max_batt_dis\n  FROM solar_readings\n  WHERE time > NOW() - INTERVAL '14 days'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy > 0\n  GROUP BY 1, 2\n) sub\nGROUP BY day\nORDER BY day",
+          "rawSql": "SELECT\n  day::date::timestamp as time,\n  day,\n  SUM(max_pv)          as \"PV Generated\",\n  SUM(max_load)        as \"Load Consumed\",\n  SUM(max_grid)        as \"Grid Import\",\n  SUM(max_batt_charge) as \"Batt Charge\",\n  SUM(max_batt_dis)    as \"Batt Discharge\"\nFROM (\n  SELECT\n    DATE(time AT TIME ZONE 'Africa/Johannesburg')::text as day,\n    inverter_name,\n    MAX(daily_pv_energy)         as max_pv,\n    MAX(daily_load_energy)       as max_load,\n    MAX(daily_grid_import)       as max_grid,\n    MAX(daily_battery_charge)    as max_batt_charge,\n    MAX(daily_battery_discharge) as max_batt_dis\n  FROM solar_readings\n  WHERE time > NOW() - INTERVAL '14 days'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy > 0\n  AND daily_pv_energy IS NOT NULL\n  GROUP BY 1, 2\n) sub\nGROUP BY day\nORDER BY day",
           "refId": "A"
         }
-      ]
+      ],
+      "description": "Combined daily energy summary across all inverters. PV Generated = total solar production. Load Consumed = total consumption. Grid Import = total grid draw. Batt Charge/Discharge = battery throughput."
     },
     {
       "id": 313,
@@ -5190,11 +5023,12 @@
             "type": "postgres",
             "uid": "solarwatch_pg"
           },
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(battery_current) as battery_current,\n  AVG(battery_voltage) as battery_voltage\nFROM solar_readings\nWHERE inverter_name = 'Inverter_1'\nAND $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(battery_current) as \"Battery Current (A)\",\n  AVG(battery_voltage) as \"Battery Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nGROUP BY 1 ORDER BY 1",
           "refId": "A",
           "format": "time_series"
         }
-      ]
+      ],
+      "description": "Battery current (A) and voltage (V) for the first inverter over time. Positive current = charging, negative = discharging."
     },
     {
       "id": 314,
@@ -5288,11 +5122,12 @@
             "type": "postgres",
             "uid": "solarwatch_pg"
           },
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(battery_current) as battery_current,\n  AVG(battery_voltage) as battery_voltage\nFROM solar_readings\nWHERE inverter_name = 'Inverter_2'\nAND $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  AVG(battery_current) as \"Battery Current (A)\",\n  AVG(battery_voltage) as \"Battery Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_name = (SELECT MAX(inverter_name) FROM solar_readings\n  WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nGROUP BY 1 ORDER BY 1",
           "refId": "A",
           "format": "time_series"
         }
-      ]
+      ],
+      "description": "Battery current (A) and voltage (V) for the second inverter over time."
     },
     {
       "id": 400,
@@ -5341,6 +5176,28 @@
         "sort": 1,
         "type": "query",
         "allValue": null
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "solarwatch_pg"
+        },
+        "definition": "SELECT jsonb_array_length(inverters)::text FROM sites WHERE site_name ILIKE '${site}'",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Inverter Count",
+        "multi": false,
+        "name": "inv_count",
+        "options": [],
+        "query": "SELECT jsonb_array_length(inverters)::text FROM sites WHERE site_name ILIKE '${site}'",
+        "refresh": 2,
+        "sort": 0,
+        "type": "query"
       },
       {
         "current": {
@@ -5415,10 +5272,30 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now/d",
     "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "refresh_intervals": [
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h"
+    ],
+    "time_options": [
+      "Today",
+      "Last 3 hours",
+      "Last 6 hours",
+      "Last 12 hours",
+      "Last 24 hours",
+      "Last 2 days",
+      "Last 7 days",
+      "Last 14 days",
+      "Last 30 days"
+    ]
+  },
   "timezone": "Africa/Johannesburg",
   "title": "SolarWatch \u2014 Solar Monitoring",
   "uid": "solarwatch-v1",
