@@ -2873,7 +2873,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak PV (W)\"\nFROM (\n  SELECT ts, SUM(avg_pv) as minute_total\n  FROM (\n    SELECT\n      DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(pv1_power + COALESCE(pv2_power, 0)) as avg_pv\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    AND pv1_power > 0\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak PV (W)\"\nFROM (\n  SELECT ts, SUM(avg_pv) as minute_total\n  FROM (\n    SELECT\n      DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(pv1_power + COALESCE(pv2_power, 0)) as avg_pv\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    AND (pv1_power > 0 OR COALESCE(pv2_power, 0) > 0)\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
           "refId": "A"
         }
       ],
@@ -2950,7 +2950,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak Load (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as ts,\n    SUM(avg_load) as minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(load_power) as avg_load\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak Load (W)\"\nFROM (\n  SELECT ts,\n    SUM(avg_load) as minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(load_power) as avg_load\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
           "refId": "A"
         }
       ],
