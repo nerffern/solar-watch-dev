@@ -115,7 +115,7 @@ INSERT INTO sites (site_name, display_name, source_type, location, inverters)
 VALUES (
     'Lanner', 'HFI Lanner', 'deye', 'Lanner, ZA',
     '[
-        {"name":"Inverter_1","ip":"100.100.6.105","dongle_serial":2771845636,"inverter_sn":"CONFIRM_PENDING"},
+        {"name":"Inverter_1","ip":"100.100.6.105","dongle_serial":2771845636,"inverter_sn":"2305138031"},
         {"name":"Inverter_2","ip":"100.100.6.204","dongle_serial":2774034843,"inverter_sn":"2304096005"}
     ]'::jsonb
 ) ON CONFLICT (site_name) DO NOTHING;
