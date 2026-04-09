@@ -28,6 +28,7 @@ Everything runs from one server. Deye sites are reached directly over WAN IP. Su
 |------|------|-----------|
 | Selati | Deye SUN-5K-SG01LP1-EU | 2 × Deye (WAN: 192.168.10.x) |
 | Lanner | Deye SUN-5K-SG01LP1-EU | 2 × Deye (WAN: 100.100.6.x) |
+| Penguin | Sunsynk (cloud API) | 1 × Sunsynk (SN: 2506303417) |
 
 ---
 
@@ -137,9 +138,16 @@ VALUES (
 ```sql
 INSERT INTO sites (site_name, display_name, source_type, sunsynk_username, sunsynk_password)
 VALUES ('MySite', 'HFI My Site', 'sunsynk', 'user@example.com', 'password');
+
+-- Then add the inverter SN (required — collector cannot poll without it):
+UPDATE sites
+SET inverters = '[{"name": "Inverter_1", "inverter_sn": "YOUR_INVERTER_SN"}]'::jsonb
+WHERE site_name = 'MySite';
 ```
 
 > ⚠️ Store Sunsynk credentials only in the database, never in this repo or `.env`.
+>
+> The inverter SN is required. The collector auto-discovers the plant ID but cannot find inverter SNs via the API — they must be set manually. Find your SN on the inverter sticker or the Sunsynk app under **Device → Inverter Info**.
 
 ---
 
