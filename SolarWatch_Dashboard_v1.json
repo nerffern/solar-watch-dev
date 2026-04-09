@@ -249,7 +249,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(avg_pv) as \"Total PV (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(pv1_power + COALESCE(pv2_power,0)) as avg_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nWHERE minute = (SELECT MAX(DATE_TRUNC('minute', time))\n  FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})",
+          "rawSql": "SELECT NOW() as time,\n  SUM(latest_pv) as \"Total PV (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    pv1_power + COALESCE(pv2_power, 0) as latest_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND pv1_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
           "refId": "A"
         }
       ],
@@ -322,7 +322,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(avg_grid) as \"Grid Power (W)\"\nFROM (\n  SELECT inverter_name,\n    AVG(grid_power) as avg_grid\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND time >= (SELECT MAX(DATE_TRUNC('minute', time))\n    FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\n  GROUP BY inverter_name\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  SUM(latest_grid) as \"Grid Power (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    grid_power as latest_grid\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND grid_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
           "refId": "A"
         }
       ],
@@ -472,7 +472,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(latest_pv) as \"Today PV (kWh)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    daily_pv_energy as latest_pv\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
+          "rawSql": "SELECT NOW() as time,\n  SUM(val) as \"Today PV (kWh)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_pv_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy IS NOT NULL\n  AND daily_pv_energy > 0\n  AND daily_pv_energy < 100\n  ORDER BY inverter_name, time DESC\n)",
           "refId": "A"
         }
       ],
@@ -550,7 +550,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                    100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as \"Grid Cost (R)\"\nFROM (\n  SELECT daily_grid_import as kwh\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' AND site_name ILIKE ${site:singlequote})\n  ORDER BY time DESC\n  LIMIT 1\n) t",
+          "rawSql": "SELECT NOW() as time,\n  CASE\n  WHEN '${calc_mode}' = 'flat' THEN\n    ROUND((grid_kwh * ${rate}::numeric)::numeric, 2)\n  ELSE\n    ROUND((\n      CASE\n        WHEN grid_kwh <= 0   THEN 0\n        WHEN grid_kwh <= 100 THEN grid_kwh * 2.9790\n        WHEN grid_kwh <= 400 THEN 100*2.9790 + (grid_kwh-100)*3.4864\n        WHEN grid_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (grid_kwh-400)*3.7983\n        ELSE                      100*2.9790 + 300*3.4864 + 250*3.7983 + (grid_kwh-650)*4.0948\n      END * 1.15\n    )::numeric, 2)\n  END as \"Today Grid Cost (R)\"\nFROM (\n  SELECT COALESCE(MAX(val), 0) as grid_kwh\n  FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_grid_import as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND daily_grid_import > 0\n  AND daily_grid_import < 500\n  ORDER BY inverter_name, time DESC\n)\n) g",
           "refId": "A"
         }
       ],
@@ -626,7 +626,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  ROUND(\n    CASE WHEN load_kwh > 0\n    THEN LEAST(100, GREATEST(0, (1 - grid_kwh / NULLIF(load_kwh, 0)) * 100))\n    ELSE 0 END\n  ::numeric, 1) as \"Self Sufficiency (%)\"\nFROM (\n  SELECT\n    COALESCE((\n      SELECT daily_load_energy\n      FROM solar_readings\n      WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' AND site_name ILIKE ${site:singlequote}\n      AND daily_load_energy > 0\n      ORDER BY time DESC LIMIT 1\n    ), 1) as load_kwh,\n    COALESCE((\n      SELECT daily_grid_import\n      FROM solar_readings\n      WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' AND site_name ILIKE ${site:singlequote}\n      AND inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' AND site_name ILIKE ${site:singlequote})\n      ORDER BY time DESC LIMIT 1\n    ), 0) as grid_kwh\n) t",
+          "rawSql": "SELECT NOW() as time,\n  ROUND(\n    CASE WHEN load_kwh > 0\n    THEN LEAST(100, GREATEST(0, (1 - grid_kwh / NULLIF(load_kwh, 0)) * 100))\n    ELSE 0 END\n  ::numeric, 1) as \"Self Sufficiency (%)\"\nFROM (\n  SELECT\n    COALESCE((SELECT MIN(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_load_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_load_energy IS NOT NULL\n  AND daily_load_energy > 0\n  AND daily_load_energy < 100\n  ORDER BY inverter_name, time DESC\n)), 1) as load_kwh,\n    COALESCE((SELECT MAX(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_grid_import as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND daily_grid_import > 0\n  AND daily_grid_import < 500\n  ORDER BY inverter_name, time DESC\n)), 0) as grid_kwh\n) t",
           "refId": "A"
         }
       ],
@@ -780,7 +780,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(avg_load) as \"Total Load (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(load_power) as avg_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nWHERE minute = (SELECT MAX(DATE_TRUNC('minute', time))\n  FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})",
+          "rawSql": "SELECT NOW() as time,\n  SUM(latest_load) as \"Total Load (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    load_power as latest_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND load_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
           "refId": "A"
         }
       ],
@@ -1007,7 +1007,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  daily_load_energy as \"Today Load (kWh)\"\nFROM solar_readings\nWHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg'\nAND site_name ILIKE ${site:singlequote}\nAND daily_load_energy IS NOT NULL\nAND daily_load_energy > 0\nORDER BY time DESC\nLIMIT 1",
+          "rawSql": "SELECT NOW() as time,\n  MIN(val) as \"Today Load (kWh)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_load_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_load_energy IS NOT NULL\n  AND daily_load_energy > 0\n  AND daily_load_energy < 100\n  ORDER BY inverter_name, time DESC\n)",
           "refId": "A"
         }
       ],
@@ -1081,7 +1081,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((pv_kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN pv_kwh <= 0   THEN 0\n          WHEN pv_kwh <= 100 THEN pv_kwh * 2.9790\n          WHEN pv_kwh <= 400 THEN 100*2.9790 + (pv_kwh-100)*3.4864\n          WHEN pv_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (pv_kwh-400)*3.7983\n          ELSE                    100*2.9790 + 300*3.4864 + 250*3.7983 + (pv_kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as \"Solar Savings (R)\"\nFROM (\n  SELECT SUM(latest_pv) as pv_kwh\n  FROM (\n    SELECT DISTINCT ON (inverter_name)\n      inverter_name,\n      daily_pv_energy as latest_pv\n    FROM solar_readings\n    WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg'\n    AND site_name ILIKE ${site:singlequote}\n    AND daily_pv_energy IS NOT NULL\n    ORDER BY inverter_name, time DESC\n  ) inv\n) t",
+          "rawSql": "SELECT NOW() as time,\n  CASE\n  WHEN '${calc_mode}' = 'flat' THEN\n    ROUND(((load_kwh - grid_kwh) * ${rate}::numeric)::numeric, 2)\n  ELSE\n    ROUND((\n      (CASE\n        WHEN load_kwh <= 0   THEN 0\n        WHEN load_kwh <= 100 THEN load_kwh * 2.9790\n        WHEN load_kwh <= 400 THEN 100*2.9790 + (load_kwh-100)*3.4864\n        WHEN load_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (load_kwh-400)*3.7983\n        ELSE                      100*2.9790 + 300*3.4864 + 250*3.7983 + (load_kwh-650)*4.0948\n      END\n      -\n      CASE\n        WHEN grid_kwh <= 0   THEN 0\n        WHEN grid_kwh <= 100 THEN grid_kwh * 2.9790\n        WHEN grid_kwh <= 400 THEN 100*2.9790 + (grid_kwh-100)*3.4864\n        WHEN grid_kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (grid_kwh-400)*3.7983\n        ELSE                      100*2.9790 + 300*3.4864 + 250*3.7983 + (grid_kwh-650)*4.0948\n      END) * 1.15\n    )::numeric, 2)\n  END as \"Today Solar Savings (R)\"\nFROM (\n  SELECT\n    COALESCE((SELECT MIN(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_load_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_load_energy IS NOT NULL\n  AND daily_load_energy > 0\n  AND daily_load_energy < 100\n  ORDER BY inverter_name, time DESC\n)), 1) as load_kwh,\n    COALESCE((SELECT MAX(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_grid_import as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND daily_grid_import > 0\n  AND daily_grid_import < 500\n  ORDER BY inverter_name, time DESC\n)), 0) as grid_kwh\n) t",
           "refId": "A"
         }
       ],
