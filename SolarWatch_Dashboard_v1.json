@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 70,
+  "id": 81,
   "links": [],
   "panels": [
     {
@@ -32,7 +32,7 @@
       },
       "id": 100,
       "panels": [],
-      "title": "\u26a1 LIVE STATUS",
+      "title": "⚡ LIVE STATUS",
       "type": "row"
     },
     {
@@ -116,7 +116,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Current battery terminal voltage. Indicates charge level \u2014 fully charged is typically 54\u201355V for a 48V LiFePO4 bank.",
+      "description": "Current battery terminal voltage. Indicates charge level — fully charged is typically 54–55V for a 48V LiFePO4 bank.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -335,7 +335,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40\u201375\u00b0C.",
+      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40–75°C.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -485,7 +485,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate \u2014 switchable via the Cost Calc Mode dropdown.",
+      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate — switchable via the Cost Calc Mode dropdown.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -563,7 +563,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 \u2212 grid_import \u00f7 total_load) \u00d7 100.",
+      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 − grid_import ÷ total_load) × 100.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -639,7 +639,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Battery pack temperature reported by the BMS. High temperatures (>45\u00b0C) may indicate heavy charge/discharge cycles.",
+      "description": "Battery pack temperature reported by the BMS. High temperatures (>45°C) may indicate heavy charge/discharge cycles.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -793,7 +793,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220\u2013240V.",
+      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220–240V.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1020,7 +1020,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Estimated savings from solar generation today \u2014 the cost you avoided by not importing this energy from the grid.",
+      "description": "Estimated savings from solar generation today — the cost you avoided by not importing this energy from the grid.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1099,7 +1099,7 @@
       },
       "id": 101,
       "panels": [],
-      "title": "\ud83d\udcc8 POWER TRENDS",
+      "title": "📈 POWER TRENDS",
       "type": "row"
     },
     {
@@ -1122,7 +1122,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 15,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1131,7 +1131,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1173,7 +1173,44 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#FFFFFF",
+                  "fixedColor": "rgba(255,255,255,0.18)",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "solid"
+                }
+              },
+              {
+                "id": "custom.fillBelowTo",
+                "value": ""
+              },
+              {
+                "id": "displayName",
+                "value": "Combined Total (W)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#2ecc71",
                   "mode": "fixed"
                 }
               },
@@ -1184,16 +1221,75 @@
               {
                 "id": "custom.fillOpacity",
                 "value": 0
-              },
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_2"
+            },
+            "properties": [
               {
-                "id": "custom.lineStyle",
+                "id": "color",
                 "value": {
-                  "fill": "solid"
+                  "fixedColor": "#f5a623",
+                  "mode": "fixed"
                 }
               },
               {
-                "id": "displayName",
-                "value": "Combined Total (W)"
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_3"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#4fc3f7",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_4"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9b59b6",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
               }
             ]
           }
@@ -1226,9 +1322,28 @@
             "type": "postgres",
             "uid": "solarwatch_pg"
           },
+          "editorMode": "code",
           "format": "time_series",
+          "rawQuery": true,
           "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(pv1_power + COALESCE(pv2_power,0)) as \"PV Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
-          "refId": "A"
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         },
         {
           "datasource": {
@@ -1240,7 +1355,7 @@
           "refId": "B"
         }
       ],
-      "title": "Solar PV Power \u2014 Per Inverter & Combined",
+      "title": "Solar PV Power — Per Inverter & Combined",
       "type": "timeseries"
     },
     {
@@ -1416,7 +1531,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 20,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1467,7 +1582,44 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#FFFFFF",
+                  "fixedColor": "rgba(255,255,255,0.18)",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 4
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "solid"
+                }
+              },
+              {
+                "id": "custom.fillBelowTo",
+                "value": ""
+              },
+              {
+                "id": "displayName",
+                "value": "Combined Load (W)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#2ecc71",
                   "mode": "fixed"
                 }
               },
@@ -1478,16 +1630,75 @@
               {
                 "id": "custom.fillOpacity",
                 "value": 0
-              },
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_2"
+            },
+            "properties": [
               {
-                "id": "custom.lineStyle",
+                "id": "color",
                 "value": {
-                  "fill": "solid"
+                  "fixedColor": "#f5a623",
+                  "mode": "fixed"
                 }
               },
               {
-                "id": "displayName",
-                "value": "Combined Total (W)"
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_3"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#4fc3f7",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_4"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9b59b6",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
               }
             ]
           }
@@ -1536,7 +1747,7 @@
           "refId": "B"
         }
       ],
-      "title": "Load Power \u2014 Per Inverter & Combined",
+      "title": "Load Power — Per Inverter & Combined",
       "type": "timeseries"
     },
     {
@@ -1801,7 +2012,7 @@
           "refId": "A"
         }
       ],
-      "title": "Grid Frequency \u2014 Eskom Quality",
+      "title": "Grid Frequency — Eskom Quality",
       "type": "timeseries"
     },
     {
@@ -1943,7 +2154,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(CASE WHEN inverter_temp < 100 THEN inverter_temp END) as \"Inverter Temp (\u00b0C)\",\n  AVG(CASE WHEN dc_temp < 100 THEN dc_temp END)             as \"DC Temp (\u00b0C)\",\n  AVG(CASE WHEN battery_temp IS NOT NULL AND battery_temp > 0 THEN battery_temp END) as \"Battery Temp (\u00b0C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(CASE WHEN inverter_temp < 100 THEN inverter_temp END) as \"Inverter Temp (°C)\",\n  AVG(CASE WHEN dc_temp < 100 THEN dc_temp END)             as \"DC Temp (°C)\",\n  AVG(CASE WHEN battery_temp IS NOT NULL AND battery_temp > 0 THEN battery_temp END) as \"Battery Temp (°C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
@@ -1960,7 +2171,7 @@
       },
       "id": 400,
       "panels": [],
-      "title": "\ud83d\udd0b BATTERY DETAIL",
+      "title": "🔋 BATTERY DETAIL",
       "type": "row"
     },
     {
@@ -2109,7 +2320,7 @@
           "refId": "A"
         }
       ],
-      "title": "Battery Amps & Voltage \u2014 Inverter 1",
+      "title": "Battery Amps & Voltage — Inverter 1",
       "type": "timeseries"
     },
     {
@@ -2258,7 +2469,7 @@
           "refId": "A"
         }
       ],
-      "title": "Battery Amps & Voltage \u2014 Inverter 2",
+      "title": "Battery Amps & Voltage — Inverter 2",
       "type": "timeseries"
     },
     {
@@ -2271,7 +2482,7 @@
       },
       "id": 102,
       "panels": [],
-      "title": "\ud83d\udcb0 ENERGY COSTS & SAVINGS",
+      "title": "💰 ENERGY COSTS & SAVINGS",
       "type": "row"
     },
     {
@@ -2375,7 +2586,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Grid Cost \u2014 Last 14 Days",
+      "title": "Daily Grid Cost — Last 14 Days",
       "type": "barchart"
     },
     {
@@ -2383,7 +2594,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Daily solar savings for the last 14 days \u2014 the cost of electricity you generated yourself instead of buying from the grid.",
+      "description": "Daily solar savings for the last 14 days — the cost of electricity you generated yourself instead of buying from the grid.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2475,7 +2686,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Solar Savings \u2014 Last 14 Days",
+      "title": "Daily Solar Savings — Last 14 Days",
       "type": "barchart"
     },
     {
@@ -2602,7 +2813,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Grid Cost vs Solar Savings \u2014 Last 30 Days",
+      "title": "Daily Grid Cost vs Solar Savings — Last 30 Days",
       "type": "barchart"
     },
     {
@@ -2615,7 +2826,7 @@
       },
       "id": 103,
       "panels": [],
-      "title": "\ud83d\udcca DAILY ENERGY SUMMARY",
+      "title": "📊 DAILY ENERGY SUMMARY",
       "type": "row"
     },
     {
@@ -2803,7 +3014,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Energy \u2014 Combined Site (Last 14 Days)",
+      "title": "Daily Energy — Combined Site (Last 14 Days)",
       "type": "barchart"
     },
     {
@@ -2995,7 +3206,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Energy \u2014 Inverter 1 (Last 14 Days)",
+      "title": "Daily Energy — Inverter 1 (Last 14 Days)",
       "type": "barchart"
     },
     {
@@ -3187,7 +3398,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Energy \u2014 Inverter 2 (Last 14 Days)",
+      "title": "Daily Energy — Inverter 2 (Last 14 Days)",
       "type": "barchart"
     },
     {
@@ -3200,7 +3411,7 @@
       },
       "id": 200,
       "panels": [],
-      "title": "\ud83d\udd0e PERFORMANCE & DIAGNOSTICS",
+      "title": "🔎 PERFORMANCE & DIAGNOSTICS",
       "type": "row"
     },
     {
@@ -3496,7 +3707,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month \u2014 PV Generated",
+      "title": "This Month — PV Generated",
       "type": "stat"
     },
     {
@@ -3573,7 +3784,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month \u2014 Grid Cost",
+      "title": "This Month — Grid Cost",
       "type": "stat"
     },
     {
@@ -3581,7 +3792,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Total solar savings this calendar month \u2014 electricity cost avoided through solar generation.",
+      "description": "Total solar savings this calendar month — electricity cost avoided through solar generation.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3646,7 +3857,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month \u2014 Solar Savings",
+      "title": "This Month — Solar Savings",
       "type": "stat"
     },
     {
@@ -3744,7 +3955,7 @@
           "refId": "A"
         }
       ],
-      "title": "Grid Power \u2014 Per Inverter",
+      "title": "Grid Power — Per Inverter",
       "type": "timeseries"
     },
     {
@@ -3891,7 +4102,7 @@
       },
       "id": 300,
       "panels": [],
-      "title": "\u2600\ufe0f SOLAR STRINGS \u2014 Per MPPT Detail",
+      "title": "☀️ SOLAR STRINGS — Per MPPT Detail",
       "type": "row"
     },
     {
@@ -3964,7 +4175,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 \u2014 PV1 Voltage",
+      "title": "Inv 1 — PV1 Voltage",
       "type": "stat"
     },
     {
@@ -4037,7 +4248,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 \u2014 PV1 Current",
+      "title": "Inv 1 — PV1 Current",
       "type": "stat"
     },
     {
@@ -4110,7 +4321,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 \u2014 PV1 Power",
+      "title": "Inv 1 — PV1 Power",
       "type": "stat"
     },
     {
@@ -4183,7 +4394,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 \u2014 PV2 Voltage",
+      "title": "Inv 1 — PV2 Voltage",
       "type": "stat"
     },
     {
@@ -4256,7 +4467,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 \u2014 PV2 Current",
+      "title": "Inv 1 — PV2 Current",
       "type": "stat"
     },
     {
@@ -4329,7 +4540,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 \u2014 PV2 Power",
+      "title": "Inv 1 — PV2 Power",
       "type": "stat"
     },
     {
@@ -4402,7 +4613,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 \u2014 PV1 Voltage",
+      "title": "Inv 2 — PV1 Voltage",
       "type": "stat"
     },
     {
@@ -4475,7 +4686,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 \u2014 PV1 Current",
+      "title": "Inv 2 — PV1 Current",
       "type": "stat"
     },
     {
@@ -4548,7 +4759,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 \u2014 PV1 Power",
+      "title": "Inv 2 — PV1 Power",
       "type": "stat"
     },
     {
@@ -4621,7 +4832,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 \u2014 PV2 Voltage",
+      "title": "Inv 2 — PV2 Voltage",
       "type": "stat"
     },
     {
@@ -4694,7 +4905,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 \u2014 PV2 Current",
+      "title": "Inv 2 — PV2 Current",
       "type": "stat"
     },
     {
@@ -4767,7 +4978,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 \u2014 PV2 Power",
+      "title": "Inv 2 — PV2 Power",
       "type": "stat"
     },
     {
@@ -4896,11 +5107,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 1' as \"String\",\n  AVG(NULLIF(pv1_voltage, 0)) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 2' as \"String\",\n  AVG(CASE WHEN pv2_voltage > 10 THEN pv2_voltage END) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_voltage > 10\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 1' as \"String\",\n  AVG(NULLIF(pv1_voltage, 0)) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 2' as \"String\",\n  AVG(CASE WHEN pv2_voltage > 10 THEN pv2_voltage END) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_voltage > 10\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "PV String Voltages \u2014 All Active Strings",
+      "title": "PV String Voltages — All Active Strings",
       "type": "timeseries"
     },
     {
@@ -5029,11 +5240,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 1' as \"String\",\n  AVG(NULLIF(pv1_power, 0)) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 2' as \"String\",\n  AVG(CASE WHEN pv2_power > 0 THEN pv2_power END) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_power > 0\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 1' as \"String\",\n  AVG(NULLIF(pv1_power, 0)) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 2' as \"String\",\n  AVG(CASE WHEN pv2_power > 0 THEN pv2_power END) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_power > 0\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "PV String Power \u2014 All Active Strings",
+      "title": "PV String Power — All Active Strings",
       "type": "timeseries"
     },
     {
@@ -5046,7 +5257,7 @@
       },
       "id": 104,
       "panels": [],
-      "title": "\ud83d\udd0d RAW DATA",
+      "title": "🔍 RAW DATA",
       "type": "row"
     },
     {
@@ -5381,19 +5592,19 @@
       },
       {
         "current": {
-          "text": "ibt",
-          "value": "ibt"
+          "text": "flat",
+          "value": "flat"
         },
         "label": "Cost Calc Mode",
         "name": "calc_mode",
         "options": [
           {
-            "selected": true,
+            "selected": false,
             "text": "ibt",
             "value": "ibt"
           },
           {
-            "selected": false,
+            "selected": true,
             "text": "flat",
             "value": "flat"
           }
@@ -5460,7 +5671,7 @@
     ]
   },
   "timezone": "Africa/Johannesburg",
-  "title": "SolarWatch \u2014 Solar Monitoring",
+  "title": "SolarWatch — Solar Monitoring",
   "uid": "solarwatch-v1",
-  "version": 1
+  "version": 4
 }

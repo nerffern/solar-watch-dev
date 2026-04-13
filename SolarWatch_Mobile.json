@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 71,
+  "id": 80,
   "links": [
     {
       "icon": "external link",
@@ -40,7 +40,7 @@
       },
       "id": 3000,
       "panels": [],
-      "title": "\u26a1  LIVE STATUS",
+      "title": "⚡  LIVE STATUS",
       "type": "row"
     },
     {
@@ -128,7 +128,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 \u2212 grid_import \u00f7 total_load) \u00d7 100.",
+      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 − grid_import ÷ total_load) × 100.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -208,7 +208,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Current battery terminal voltage. Indicates charge level \u2014 fully charged is typically 54\u201355V for a 48V LiFePO4 bank.",
+      "description": "Current battery terminal voltage. Indicates charge level — fully charged is typically 54–55V for a 48V LiFePO4 bank.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -285,7 +285,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Battery pack temperature reported by the BMS. High temperatures (>45\u00b0C) may indicate heavy charge/discharge cycles.",
+      "description": "Battery pack temperature reported by the BMS. High temperatures (>45°C) may indicate heavy charge/discharge cycles.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -366,7 +366,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40\u201375\u00b0C.",
+      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40–75°C.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -597,7 +597,7 @@
           "refId": "A"
         }
       ],
-      "title": "\u2600\ufe0f Solar",
+      "title": "☀️ Solar",
       "type": "stat"
     },
     {
@@ -678,7 +678,7 @@
           "refId": "A"
         }
       ],
-      "title": "\ud83c\udfe0 Load",
+      "title": "🏠 Load",
       "type": "stat"
     },
     {
@@ -755,7 +755,7 @@
           "refId": "A"
         }
       ],
-      "title": "\u26a1 Grid",
+      "title": "⚡ Grid",
       "type": "stat"
     },
     {
@@ -763,7 +763,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220\u2013240V.",
+      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220–240V.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -849,7 +849,7 @@
       },
       "id": 3011,
       "panels": [],
-      "title": "\u2600\ufe0f  TODAY",
+      "title": "☀️  TODAY",
       "type": "row"
     },
     {
@@ -1084,7 +1084,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate \u2014 switchable via the Cost Calc Mode dropdown.",
+      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate — switchable via the Cost Calc Mode dropdown.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1166,7 +1166,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Estimated savings from solar generation today \u2014 the cost you avoided by not importing this energy from the grid.",
+      "description": "Estimated savings from solar generation today — the cost you avoided by not importing this energy from the grid.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1407,7 +1407,7 @@
       },
       "id": 3017,
       "panels": [],
-      "title": "\ud83d\udcc8  CHARTS",
+      "title": "📈  CHARTS",
       "type": "row"
     },
     {
@@ -1418,10 +1418,56 @@
       "description": "Solar PV power output over time, one line per inverter. Shows generation profile throughout the day.",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "fillOpacity": 15,
-            "lineWidth": 2,
-            "spanNulls": true
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
           },
           "unit": "watt"
         },
@@ -1435,7 +1481,44 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#FFFFFF",
+                  "fixedColor": "rgba(255,255,255,0.18)",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "solid"
+                }
+              },
+              {
+                "id": "custom.fillBelowTo",
+                "value": ""
+              },
+              {
+                "id": "displayName",
+                "value": "Combined Total (W)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#2ecc71",
                   "mode": "fixed"
                 }
               },
@@ -1446,16 +1529,75 @@
               {
                 "id": "custom.fillOpacity",
                 "value": 0
-              },
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_2"
+            },
+            "properties": [
               {
-                "id": "custom.lineStyle",
+                "id": "color",
                 "value": {
-                  "fill": "solid"
+                  "fixedColor": "#f5a623",
+                  "mode": "fixed"
                 }
               },
               {
-                "id": "displayName",
-                "value": "Combined Total (W)"
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_3"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#4fc3f7",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W) Inverter_4"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9b59b6",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
               }
             ]
           }
@@ -1678,7 +1820,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 20,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1729,7 +1871,44 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#FFFFFF",
+                  "fixedColor": "rgba(255,255,255,0.18)",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "solid"
+                }
+              },
+              {
+                "id": "custom.fillBelowTo",
+                "value": ""
+              },
+              {
+                "id": "displayName",
+                "value": "Combined Load (W)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#2ecc71",
                   "mode": "fixed"
                 }
               },
@@ -1740,26 +1919,85 @@
               {
                 "id": "custom.fillOpacity",
                 "value": 0
-              },
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_2"
+            },
+            "properties": [
               {
-                "id": "custom.lineStyle",
+                "id": "color",
                 "value": {
-                  "fill": "solid"
+                  "fixedColor": "#f5a623",
+                  "mode": "fixed"
                 }
               },
               {
-                "id": "displayName",
-                "value": "Combined Total (W)"
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_3"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#4fc3f7",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Power (W) Inverter_4"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9b59b6",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "x": 0,
-        "y": 54,
+        "h": 8,
         "w": 24,
-        "h": 8
+        "x": 0,
+        "y": 54
       },
       "id": 3027,
       "options": {
@@ -1782,10 +2020,28 @@
             "type": "postgres",
             "uid": "solarwatch_pg"
           },
+          "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
           "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(load_power) as \"Load Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
-          "refId": "A"
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         },
         {
           "datasource": {
@@ -1798,7 +2054,7 @@
           "refId": "B"
         }
       ],
-      "title": "Load Power \u2014 Per Inverter & Combined",
+      "title": "Load Power — Per Inverter & Combined",
       "type": "timeseries"
     },
     {
@@ -1964,7 +2220,7 @@
       },
       "id": 3021,
       "panels": [],
-      "title": "\ud83d\udcc5  THIS MONTH",
+      "title": "📅  THIS MONTH",
       "type": "row"
     },
     {
@@ -2130,7 +2386,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Total solar savings this calendar month \u2014 electricity cost avoided through solar generation.",
+      "description": "Total solar savings this calendar month — electricity cost avoided through solar generation.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2331,7 +2587,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "SolarWatch \u2014 Mobile",
+  "title": "SolarWatch — Mobile",
   "uid": "solarwatch-mobile",
-  "version": 1
+  "version": 3
 }
