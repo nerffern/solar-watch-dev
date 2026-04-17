@@ -187,6 +187,7 @@ HTML = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SolarWatch</title>
+<meta name="description" content="Multi-site solar inverter monitoring — live power flow, battery SOC, grid and load data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Barlow:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -195,7 +196,7 @@ HTML = r"""<!DOCTYPE html>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0c10;--surface:#111318;--s2:#181c24;--border:#232736;
-  --text:#e8eaf2;--muted:#4a5070;
+  --text:#e8eaf2;--muted:#8090b8;
   --solar:#f5a623;--green:#2ecc71;--amber:#f39c12;--red:#e74c3c;--load:#4fc3f7;
   --gin:#e74c3c;--gout:#2ecc71;--batt:#2ecc71;
   --mono:'DM Mono',monospace;--sans:'Barlow',sans-serif;
@@ -375,6 +376,167 @@ footer{
 /* IBT rate selector (hidden when flat mode) */
 #ibt-select{display:none}
 #flat-input-wrap{display:flex;align-items:center;gap:4px}
+
+/* ── MOBILE / TABLET RESPONSIVE ─────────────────────────────────────────────
+   Breakpoint: ≤768px wide OR portrait orientation on any screen.
+   All desktop styles above are completely untouched.
+   We only add/override here.
+──────────────────────────────────────────────────────────────────────────── */
+@media (max-width:768px),(orientation:portrait) and (max-width:1024px){
+
+  /* Allow page to scroll on mobile instead of hard-clipping */
+  html,body{overflow:auto}
+
+  /* Tighter grid rows: smaller header, auto main, compact footer */
+  .app{grid-template-rows:auto 1fr auto;min-height:100vh;height:auto}
+
+  /* ── HEADER ── */
+  header{
+    flex-wrap:wrap;gap:6px;padding:8px 12px;
+    height:auto;min-height:48px;
+  }
+  .logo{font-size:15px}
+  /* Stack hdr-right controls into a wrapping row */
+  .hdr-right{
+    flex-wrap:wrap;gap:6px;width:100%;
+    justify-content:flex-start;
+  }
+  /* Hide rate controls on mobile — too cramped, not critical at-a-glance */
+  .rate-wrap{display:none}
+  /* Hide cycle auto controls on mobile */
+  .hdr-right > div:last-of-type{display:none}
+  /* Age badge always visible */
+  .age-badge{margin-left:auto}
+  /* Site select full-width-ish */
+  .site-wrap{gap:6px}
+  /* Buttons a bit larger for touch */
+  .vbtn{padding:7px 16px;font-size:12px}
+
+  /* ── BASIC VIEW — switch to column layout ── */
+  #view-basic{
+    flex-direction:column;
+    height:auto;
+    min-height:calc(100svh - 120px);
+  }
+
+  /* SOC panel: horizontal strip across the top */
+  .soc-panel{
+    width:100%;
+    flex-direction:row;
+    border-right:none;
+    border-bottom:1px solid var(--border);
+    padding:10px 16px;
+    gap:14px;
+    justify-content:flex-start;
+    align-items:center;
+    flex-shrink:0;
+    min-height:0;
+  }
+  /* Shrink the gauge on mobile */
+  .gauge-wrap{
+    width:clamp(64px,18vw,96px);
+    flex-shrink:0;
+  }
+  .gauge-num{font-size:clamp(18px,5vw,32px)}
+  .gauge-lbl{font-size:9px}
+  /* Status text group: badge + message stacked */
+  .soc-panel > .s-badge{order:2;font-size:11px;padding:4px 10px}
+  .soc-panel > .s-msg{
+    order:3;font-size:clamp(12px,3.5vw,18px);
+    text-align:left;padding:0;
+  }
+
+  /* Flow area: takes remaining space, fixed min height so nodes aren't squashed */
+  .flow-area{
+    flex:1;
+    min-height:300px;
+    width:100%;
+  }
+
+  /* Node cards: smaller on mobile */
+  .nc{
+    width:clamp(90px,22vw,130px);
+    padding:8px 10px;
+    border-radius:10px;
+    gap:3px;
+  }
+  .n-ico{font-size:clamp(18px,5vw,30px)}
+  .n-val{font-size:clamp(14px,4.5vw,24px)}
+  .n-lbl{font-size:9px}
+  .n-sub{font-size:9px}
+
+  /* Hub ring: smaller */
+  .hub-ring{
+    width:clamp(44px,11vw,64px);
+    height:clamp(44px,11vw,64px);
+    font-size:clamp(18px,5vw,30px);
+  }
+  .hub-lbl{font-size:8px}
+
+  /* ── FOOTER ── */
+  footer{
+    height:auto;
+    padding:8px 12px;
+    gap:0;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    justify-items:center;
+    align-items:center;
+  }
+  /* Show only first 4 most important stats */
+  footer .stat:nth-child(1){order:1}  /* Battery V */
+  footer .stat:nth-child(2){order:2}  /* Batt Temp */
+  footer .stat:nth-child(3){order:3}  /* Grid V */
+  footer .stat:nth-child(4){order:4}  /* Frequency */
+  footer .stat:nth-child(5){order:5}  /* Self-Suff */
+  footer .stat:nth-child(6){order:6}  /* PV Today */
+  footer .stat:nth-child(7){order:7}  /* Load Today */
+  footer .stat:nth-child(8){order:8}  /* Solar Savings */
+  /* Hide Grid Today and Clock in the tight footer */
+  footer .stat:nth-child(9){display:none}
+  footer #clock-wrap{display:none}
+
+  .st-lbl{font-size:9px}
+  .st-val{font-size:clamp(12px,3.5vw,18px)}
+  /* Clock is huge on desktop — reset to normal on mobile */
+  #clock{font-size:clamp(12px,3.5vw,18px)!important;font-weight:500!important}
+
+  /* ── ADVANCED VIEW ── */
+  /* Single column on mobile */
+  .adv-inner{
+    grid-template-columns:1fr;
+    grid-template-rows:none;
+    overflow-y:auto;
+    height:auto;
+  }
+  /* All panels go full width */
+  .adv-inner .chart-panel{
+    min-height:220px;
+  }
+  /* Stat pills: 3 across instead of 6 */
+  .adv-stats{
+    height:auto;
+    flex-wrap:wrap;
+    padding:4px 0;
+  }
+  .adv-stat{
+    flex:0 0 33.333%;
+    min-width:0;
+    padding:6px 4px;
+    border-bottom:1px solid var(--border);
+  }
+  .adv-stat-lbl{font-size:8px}
+  .adv-stat-val{font-size:clamp(14px,4vw,22px)}
+}
+
+/* Extra-small phones (≤380px) — tighten further */
+@media (max-width:380px){
+  .nc{width:80px;padding:6px 7px}
+  .n-val{font-size:13px}
+  footer{grid-template-columns:repeat(4,1fr)}
+  .st-val{font-size:11px}
+  .adv-stat{flex:0 0 50%}
+}
 </style>
 </head>
 <body>
@@ -394,10 +556,10 @@ footer{
       </div>
       <div id="flat-input-wrap">
         <span style="font-size:clamp(10px,.9vw,13px);color:var(--muted)">R</span>
-        <input class="rate-inp" type="number" id="flat-rate" value="4.50" step="0.10" min="1" max="10" oninput="onRateChange()">
+        <input class="rate-inp" type="number" id="flat-rate" aria-label="Flat electricity rate in Rand per kWh" value="4.50" step="0.10" min="1" max="10" oninput="onRateChange()">
         <span style="font-size:clamp(9px,.8vw,12px);color:var(--muted)">/kWh</span>
       </div>
-      <select id="ibt-select" onchange="onRateChange()">
+      <select id="ibt-select" aria-label="IBT tariff schedule" onchange="onRateChange()">
         <option value="ibt_2025">IBT 2025/26 (Tshwane)</option>
       </select>
     </div>
@@ -405,7 +567,7 @@ footer{
     <!-- Site selector -->
     <div class="site-wrap">
       <span class="site-lbl">Site</span>
-      <select id="site-sel" onchange="onSiteChange()"></select>
+      <select id="site-sel" aria-label="Select site" onchange="onSiteChange()"></select>
     </div>
 
     <!-- View toggle -->
@@ -414,11 +576,23 @@ footer{
       <button class="vbtn" id="vbtn-adv" onclick="setView('adv')">Advanced</button>
     </div>
 
-    <!-- Auto-cycle -->
-    <button class="cycle-btn" id="cycle-btn" onclick="toggleCycle()">
-      <span class="cycle-dot"></span>
-      <span id="cycle-lbl">Auto</span>
-    </button>
+    <!-- Auto-cycle with duration selector -->
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="cycle-btn" id="cycle-btn" onclick="toggleCycle()">
+        <span class="cycle-dot"></span>
+        <span id="cycle-lbl">Auto</span>
+      </button>
+      <select id="cycle-dur" aria-label="Auto-cycle duration" onchange="onCycleDurChange()" style="padding:4px 8px;font-size:clamp(9px,.85vw,12px);border-radius:6px;background:var(--s2);border:1px solid var(--border);color:var(--muted);font-family:var(--sans);cursor:pointer;outline:none">
+        <option value="10">10s</option>
+        <option value="15" selected>15s</option>
+        <option value="20">20s</option>
+        <option value="30">30s</option>
+        <option value="45">45s</option>
+        <option value="60">1m</option>
+        <option value="120">2m</option>
+        <option value="300">5m</option>
+      </select>
+    </div>
 
     <!-- Age -->
     <div class="age-badge"><div class="dot" id="dot"></div><span id="age">—</span></div>
@@ -426,7 +600,7 @@ footer{
 </header>
 
 <!-- VIEWS -->
-<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<main style="flex:1;overflow:hidden;display:flex;flex-direction:column">
 
   <!-- BASIC VIEW -->
   <div class="view active" id="view-basic">
@@ -497,7 +671,7 @@ footer{
     </div>
   </div>
 
-</div>
+</main>
 
 <!-- FOOTER -->
 <footer>
@@ -510,6 +684,11 @@ footer{
   <div class="stat"><span class="st-lbl">Load Today</span><span class="st-val" id="f-tl">—</span></div>
   <div class="stat"><span class="st-lbl">Solar Savings</span><span class="st-val" id="f-sv" style="color:var(--green)">—</span></div>
   <div class="stat"><span class="st-lbl">Grid Today</span><span class="st-val" id="f-tg">—</span></div>
+  <!-- Clock — click to toggle visibility, persists in localStorage -->
+  <div class="stat" id="clock-wrap" onclick="toggleClock()" title="Click to toggle clock" style="cursor:pointer;margin-left:auto;padding-left:clamp(8px,2vw,32px);opacity:0.4;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=clockVisible?1:0.4">
+    <span class="st-lbl">Time</span>
+    <span class="st-val" id="clock" style="font-family:var(--mono);color:var(--muted);font-size:clamp(20px,2.4vw,40px);font-weight:600">--:--:--</span>
+  </div>
 </footer>
 
 </div>
@@ -517,6 +696,8 @@ footer{
 <script>
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let currentSite=null, currentView='basic', cycleOn=false, cycleTimer=null;
+let cycleDuration=15; // seconds
+let clockVisible=false, clockTimer=null;
 let rateMode='flat', flatRate=4.50;
 let liveTimer=null, chartTimer=null;
 let charts={};
@@ -581,7 +762,12 @@ function startCycle(){
   if(cycleTimer)clearInterval(cycleTimer);
   cycleTimer=setInterval(()=>{
     setView(currentView==='basic'?'adv':'basic');
-  },15000);
+  }, cycleDuration * 1000);
+}
+
+function onCycleDurChange(){
+  cycleDuration = parseInt(document.getElementById('cycle-dur').value);
+  if(cycleOn){ clearInterval(cycleTimer); startCycle(); } // restart with new duration
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -860,6 +1046,40 @@ function onSiteChange(){
 setInterval(()=>{if(currentView==='adv')loadCharts();},60000);
 
 new ResizeObserver(()=>{if(window._ld)drawLines(window._ld);}).observe(document.getElementById('fa'));
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
+function toggleClock(){
+  clockVisible=!clockVisible;
+  localStorage.setItem('sw_clock',clockVisible?'1':'0');
+  applyClockState();
+}
+
+function applyClockState(){
+  const el=document.getElementById('clock-wrap');
+  const clk=document.getElementById('clock');
+  if(clockVisible){
+    el.style.opacity='1';
+    clk.style.color='var(--text)';
+    if(!clockTimer) clockTimer=setInterval(updateClock,1000);
+    updateClock();
+  } else {
+    el.style.opacity='0.4';
+    clk.style.color='var(--muted)';
+    clk.textContent='--:--:--';
+    if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
+  }
+}
+
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=
+    now.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Africa/Johannesburg'});
+}
+
+// Restore clock preference
+clockVisible = localStorage.getItem('sw_clock')=='1';
+applyClockState();
+
 loadSites();
 </script>
 </body>
