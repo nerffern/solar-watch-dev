@@ -3,3 +3,6 @@ psycopg2-binary>=2.9.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 pycryptodome>=3.19.0
+# tzdata provides IANA timezone data for weather_worker.py (zoneinfo)
+# Required on some minimal Linux distros that lack system tz data
+tzdata>=2024.1

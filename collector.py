@@ -3,8 +3,9 @@
 SolarWatch — collector.py
 
 Single process, runs on one central server.
-  • Deye sites  → polled directly over WAN via Solarman V5 (pysolarmanv5)
+  • Deye sites    → polled directly over WAN via Solarman V5 (pysolarmanv5)
   • Sunsynk sites → polled via api.sunsynk.net cloud API
+  • Weather       → polled from Open-Meteo (free, no API key) every WEATHER_INTERVAL seconds
 
 Site and inverter config is loaded from the `sites` table in the DB —
 no hardcoded IPs or serials in this file.
@@ -17,7 +18,6 @@ import sys
 import time
 import signal
 import logging
-import threading
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 
 import deye_worker
 import sunsynk_worker
+import weather_worker
 
 load_dotenv()
 
@@ -49,10 +50,11 @@ log = logging.getLogger("solarwatch")
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-POLL_INTERVAL   = int(os.getenv("POLL_INTERVAL",   "60"))
-MAX_RETRIES     = int(os.getenv("MAX_RETRIES",     "3"))
-RETRY_DELAY     = int(os.getenv("RETRY_DELAY",     "5"))
-CONFIG_RELOAD   = int(os.getenv("CONFIG_RELOAD",   "300"))  # re-read sites table every N seconds
+POLL_INTERVAL    = int(os.getenv("POLL_INTERVAL",    "60"))
+MAX_RETRIES      = int(os.getenv("MAX_RETRIES",      "3"))
+RETRY_DELAY      = int(os.getenv("RETRY_DELAY",      "5"))
+CONFIG_RELOAD    = int(os.getenv("CONFIG_RELOAD",    "300"))   # re-read sites table every N seconds
+WEATHER_INTERVAL = int(os.getenv("WEATHER_INTERVAL", "900"))   # weather poll every 15 min
 
 PG_DSN = (
     f"host={os.getenv('PG_HOST', 'postgres-ha.hfisystems.com')} "
@@ -73,7 +75,11 @@ db_pool: Optional[psycopg2.pool.ThreadedConnectionPool] = None
 def init_db_pool():
     global db_pool
     db_pool = psycopg2.pool.ThreadedConnectionPool(1, 10, PG_DSN)
-    log.info(f"DB pool ready → {os.getenv('PG_HOST', 'postgres-ha.hfisystems.com')}:{os.getenv('PG_PORT','5432')}/solarwatch")
+    log.info(
+        f"DB pool ready → "
+        f"{os.getenv('PG_HOST', 'postgres-ha.hfisystems.com')}:"
+        f"{os.getenv('PG_PORT','5432')}/solarwatch"
+    )
 
 
 def load_sites() -> tuple[list[dict], list[dict]]:
@@ -83,13 +89,14 @@ def load_sites() -> tuple[list[dict], list[dict]]:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("""
                 SELECT site_name, display_name, source_type,
-                       inverters, sunsynk_username, sunsynk_password, sunsynk_plant_id
+                       inverters, sunsynk_username, sunsynk_password, sunsynk_plant_id,
+                       latitude, longitude
                 FROM sites
                 WHERE enabled = TRUE
                 ORDER BY source_type, site_name
             """)
-            rows        = [dict(r) for r in cur.fetchall()]
-            deye_sites  = [r for r in rows if r["source_type"] == "deye"]
+            rows          = [dict(r) for r in cur.fetchall()]
+            deye_sites    = [r for r in rows if r["source_type"] == "deye"]
             sunsynk_sites = [r for r in rows if r["source_type"] == "sunsynk"]
             return deye_sites, sunsynk_sites
     finally:
@@ -123,6 +130,22 @@ INSERT INTO solar_readings (
 )
 """
 
+WEATHER_INSERT_SQL = """
+INSERT INTO weather_readings (
+    time, site_name,
+    temp_c, feels_like_c, cloud_cover, precipitation,
+    wind_speed, wind_direction, humidity,
+    weather_code, uv_index, sunrise, sunset,
+    solar_rad, is_day
+) VALUES (
+    %(time)s, %(site_name)s,
+    %(temp_c)s, %(feels_like_c)s, %(cloud_cover)s, %(precipitation)s,
+    %(wind_speed)s, %(wind_direction)s, %(humidity)s,
+    %(weather_code)s, %(uv_index)s, %(sunrise)s, %(sunset)s,
+    %(solar_rad)s, %(is_day)s
+)
+"""
+
 
 def write_reading(site_name: str, inv_name: str, inv_sn: str, data: dict):
     conn = db_pool.getconn()
@@ -145,6 +168,21 @@ def write_reading(site_name: str, inv_name: str, inv_sn: str, data: dict):
         db_pool.putconn(conn)
 
 
+def write_weather(data: dict):
+    """Insert one weather reading — strips internal _emoji/_description keys."""
+    conn = db_pool.getconn()
+    try:
+        with conn.cursor() as cur:
+            row = {k: v for k, v in data.items() if not k.startswith("_")}
+            cur.execute(WEATHER_INSERT_SQL, row)
+            conn.commit()
+    except Exception as e:
+        conn.rollback()
+        log.error(f"[weather/{data.get('site_name')}] DB write failed: {e}")
+    finally:
+        db_pool.putconn(conn)
+
+
 # ── DEYE POLLING ──────────────────────────────────────────────────────────────
 
 def poll_deye_inverter_with_retry(inv: dict, site_name: str) -> Optional[dict]:
@@ -153,7 +191,10 @@ def poll_deye_inverter_with_retry(inv: dict, site_name: str) -> Optional[dict]:
         if result is not None:
             return result
         if attempt < MAX_RETRIES:
-            log.warning(f"[{site_name}/{inv['name']}] Retry {attempt}/{MAX_RETRIES} in {RETRY_DELAY}s...")
+            log.warning(
+                f"[{site_name}/{inv['name']}] Retry {attempt}/{MAX_RETRIES} "
+                f"in {RETRY_DELAY}s..."
+            )
             time.sleep(RETRY_DELAY)
     log.error(f"[{site_name}/{inv['name']}] All {MAX_RETRIES} attempts failed")
     return None
@@ -166,9 +207,10 @@ def poll_deye_sites(sites: list[dict]):
         for inv in inverters:
             if not running:
                 return
-            # Skip inverters with unconfirmed SNs
             if inv.get("inverter_sn", "").startswith("CONFIRM"):
-                log.warning(f"[{site_name}/{inv['name']}] Skipping — inverter_sn not confirmed")
+                log.warning(
+                    f"[{site_name}/{inv['name']}] Skipping — inverter_sn not confirmed"
+                )
                 continue
             data = poll_deye_inverter_with_retry(inv, site_name)
             if data:
@@ -180,7 +222,6 @@ def poll_deye_sites(sites: list[dict]):
 
 # ── SUNSYNK POLLING ───────────────────────────────────────────────────────────
 
-# One authenticated client per Sunsynk account (keyed by username)
 _sunsynk_clients: dict[str, sunsynk_worker.SunsynkClient] = {}
 
 
@@ -216,6 +257,37 @@ def poll_sunsynk_sites(sites: list[dict]):
             log.error(f"[{site_name}] Sunsynk poll error: {e}")
 
 
+# ── WEATHER POLLING ───────────────────────────────────────────────────────────
+
+# Tracks last weather poll time per site (monotonic seconds)
+_last_weather: dict[str, float] = {}
+
+
+def poll_weather(all_sites: list[dict]):
+    """
+    Poll Open-Meteo for every site that has lat/lon set and whose last
+    weather fetch is older than WEATHER_INTERVAL.
+    Silently skips sites with no coordinates configured.
+    """
+    now = time.monotonic()
+    for site in all_sites:
+        site_name = site["site_name"]
+        lat = site.get("latitude")
+        lon = site.get("longitude")
+
+        if lat is None or lon is None:
+            continue  # coordinates not set yet — skip silently
+
+        last = _last_weather.get(site_name, 0)
+        if now - last < WEATHER_INTERVAL:
+            continue  # not due yet
+
+        data = weather_worker.fetch(site_name, float(lat), float(lon))
+        if data:
+            write_weather(data)
+            _last_weather[site_name] = now
+
+
 # ── GRACEFUL SHUTDOWN ─────────────────────────────────────────────────────────
 
 running = True
@@ -236,15 +308,16 @@ signal.signal(signal.SIGINT,  handle_signal)
 def main():
     log.info("=" * 60)
     log.info("SolarWatch Collector starting")
-    log.info(f"Poll interval  : {POLL_INTERVAL}s")
-    log.info(f"Config reload  : every {CONFIG_RELOAD}s")
+    log.info(f"Poll interval    : {POLL_INTERVAL}s")
+    log.info(f"Config reload    : every {CONFIG_RELOAD}s")
+    log.info(f"Weather interval : every {WEATHER_INTERVAL}s")
     log.info("=" * 60)
 
     init_db_pool()
 
-    deye_sites      = []
-    sunsynk_sites   = []
-    last_cfg_load   = 0
+    deye_sites    = []
+    sunsynk_sites = []
+    last_cfg_load = 0
 
     while running:
         cycle_start = time.monotonic()
@@ -255,7 +328,8 @@ def main():
                 deye_sites, sunsynk_sites = load_sites()
                 last_cfg_load = time.monotonic()
                 log.info(
-                    f"Sites loaded — Deye: {[s['site_name'] for s in deye_sites]} | "
+                    f"Sites loaded — "
+                    f"Deye: {[s['site_name'] for s in deye_sites]} | "
                     f"Sunsynk: {[s['site_name'] for s in sunsynk_sites]}"
                 )
             except Exception as e:
@@ -268,6 +342,11 @@ def main():
         # Poll Sunsynk sites (cloud API)
         if sunsynk_sites:
             poll_sunsynk_sites(sunsynk_sites)
+
+        # Poll weather for all sites that have coordinates set
+        all_sites = deye_sites + sunsynk_sites
+        if all_sites:
+            poll_weather(all_sites)
 
         elapsed    = time.monotonic() - cycle_start
         sleep_time = max(0, POLL_INTERVAL - elapsed)

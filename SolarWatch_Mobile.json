@@ -1,32 +1,24 @@
 {
   "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
+    "list": []
   },
-  "description": "Mobile-optimised SolarWatch dashboard.",
+  "description": "SolarWatch \u2014 compact mobile view. All panels full-width for easy reading on phones.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 80,
+  "id": null,
   "links": [
     {
-      "icon": "external link",
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
       "targetBlank": false,
-      "title": "Full Dashboard",
+      "title": "\u2190 Full Dashboard",
+      "tooltip": "Switch to full SolarWatch dashboard",
       "type": "link",
-      "url": "/d/solarwatch-v1/solarwatch-solar-monitoring"
+      "url": "/d/solarwatch-v1"
     }
   ],
   "panels": [
@@ -38,9 +30,9 @@
         "x": 0,
         "y": 0
       },
-      "id": 3000,
+      "id": 1,
       "panels": [],
-      "title": "⚡  LIVE STATUS",
+      "title": "\u26a1 LIVE STATUS",
       "type": "row"
     },
     {
@@ -48,15 +40,13 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Current battery state of charge as a percentage. Sourced from the battery BMS via the inverter.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -66,87 +56,7 @@
               },
               {
                 "color": "orange",
-                "value": 20
-              },
-              {
-                "color": "yellow",
-                "value": 40
-              },
-              {
-                "color": "green",
-                "value": 60
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 1
-      },
-      "id": 3001,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto",
-        "text": {
-          "titleSize": 14,
-          "valueSize": 34
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT time, battery_soc\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND battery_soc IS NOT NULL\nORDER BY time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Battery SOC",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 − grid_import ÷ total_load) × 100.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 30
+                "value": 25
               },
               {
                 "color": "yellow",
@@ -154,102 +64,27 @@
               },
               {
                 "color": "green",
-                "value": 70
+                "value": 80
               }
             ]
           },
-          "unit": "percent"
+          "unit": "percent",
+          "decimals": 1
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 1
       },
-      "id": 3002,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto",
-        "text": {
-          "titleSize": 14,
-          "valueSize": 34
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  ROUND(\n    CASE WHEN load_kwh > 0\n    THEN LEAST(100, GREATEST(0, (1 - grid_kwh / NULLIF(load_kwh, 0)) * 100))\n    ELSE 0 END\n  ::numeric, 1) as \"Self Sufficiency (%)\"\nFROM (\n  SELECT\n    COALESCE((SELECT MIN(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_load_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_load_energy IS NOT NULL\n  AND daily_load_energy > 0\n  AND daily_load_energy < 100\n  ORDER BY inverter_name, time DESC\n)), 1) as load_kwh,\n    COALESCE((SELECT MAX(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_grid_import as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND daily_grid_import > 0\n  AND daily_grid_import < 500\n  ORDER BY inverter_name, time DESC\n)), 0) as grid_kwh\n) t",
-          "refId": "A"
-        }
-      ],
-      "title": "Self-Sufficiency Today",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Current battery terminal voltage. Indicates charge level — fully charged is typically 54–55V for a 48V LiFePO4 bank.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 2,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 49
-              },
-              {
-                "color": "green",
-                "value": 51
-              }
-            ]
-          },
-          "unit": "volt"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 9
-      },
-      "id": 3003,
+      "id": 2,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -258,10 +93,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -273,11 +104,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, battery_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND battery_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT time, AVG(battery_soc) AS \"SOC %\"\nFROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nGROUP BY time ORDER BY time DESC LIMIT 1",
           "refId": "A"
         }
       ],
-      "title": "Battery Voltage",
+      "title": "\ud83d\udd0b Battery SOC",
       "type": "stat"
     },
     {
@@ -285,256 +116,12 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Battery pack temperature reported by the BMS. High temperatures (>45°C) may indicate heavy charge/discharge cycles.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 1,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 10
-              },
-              {
-                "color": "orange",
-                "value": 40
-              },
-              {
-                "color": "red",
-                "value": 50
-              }
-            ]
-          },
-          "unit": "celsius"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 9
-      },
-      "id": 3004,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT time, battery_temp\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND battery_temp IS NOT NULL\nORDER BY time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Battery Temp",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40–75°C.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 1,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 55
-              },
-              {
-                "color": "orange",
-                "value": 65
-              },
-              {
-                "color": "red",
-                "value": 75
-              }
-            ]
-          },
-          "unit": "celsius"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 13
-      },
-      "id": 3005,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT time, inverter_temp\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_temp IS NOT NULL\nAND inverter_temp < 100\nORDER BY inverter_name ASC, time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Inverter 1 Temp",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Internal temperature of the second inverter's power stage.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 1,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 55
-              },
-              {
-                "color": "orange",
-                "value": 65
-              },
-              {
-                "color": "red",
-                "value": 75
-              }
-            ]
-          },
-          "unit": "celsius"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 13
-      },
-      "id": 3006,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT time, inverter_temp\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND (SELECT COALESCE(jsonb_array_length(inverters), 0) FROM sites WHERE site_name ILIKE ${site:singlequote}) > 1\nAND inverter_temp IS NOT NULL\nAND inverter_temp < 100\nORDER BY inverter_name DESC, time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Inverter 2 Temp",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Combined solar PV output across all inverters at the latest poll. Sum of all MPPT strings.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 0,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -545,15 +132,88 @@
               },
               {
                 "color": "yellow",
-                "value": 100
+                "value": 500
               },
               {
                 "color": "green",
-                "value": 1000
+                "value": 2000
               }
             ]
           },
-          "unit": "watt"
+          "unit": "watt",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT NOW() AS time,\n  SUM(latest_pv) AS \"Solar (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    pv1_power + COALESCE(pv2_power, 0) AS latest_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND pv1_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
+          "refId": "A"
+        }
+      ],
+      "title": "\u2600\ufe0f Solar Power",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": -99999
+              },
+              {
+                "color": "yellow",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "unit": "watt",
+          "decimals": 1
         },
         "overrides": []
       },
@@ -561,15 +221,14 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 17
+        "y": 5
       },
-      "id": 3007,
+      "id": 4,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -578,10 +237,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -593,11 +248,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(latest_pv) as \"Total PV (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    pv1_power + COALESCE(pv2_power, 0) as latest_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND pv1_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
+          "rawSql": "SELECT NOW() AS time,\n  SUM(latest_grid) AS \"Grid (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    grid_power AS latest_grid\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND grid_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
           "refId": "A"
         }
       ],
-      "title": "☀️ Solar",
+      "title": "\ud83d\udd0c Grid Power",
       "type": "stat"
     },
     {
@@ -605,36 +260,32 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Total load power being consumed across all inverters at the latest poll.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 0,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "blue",
                 "value": 0
               },
               {
                 "color": "yellow",
-                "value": 3000
-              },
-              {
-                "color": "orange",
-                "value": 6000
+                "value": 1500
               },
               {
                 "color": "red",
-                "value": 8000
+                "value": 3000
               }
             ]
           },
-          "unit": "watt"
+          "unit": "watt",
+          "decimals": 1
         },
         "overrides": []
       },
@@ -642,15 +293,14 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 17
+        "y": 5
       },
-      "id": 3008,
+      "id": 5,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -659,10 +309,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -674,11 +320,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(latest_load) as \"Total Load (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    load_power as latest_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND load_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
+          "rawSql": "SELECT NOW() AS time,\n  SUM(latest_load) AS \"Load (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    load_power AS latest_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND load_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
           "refId": "A"
         }
       ],
-      "title": "🏠 Load",
+      "title": "\ud83c\udfe0 Load Power",
       "type": "stat"
     },
     {
@@ -686,90 +332,12 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Combined grid power draw across all inverters. Positive = importing from grid.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 0,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 100
-              },
-              {
-                "color": "orange",
-                "value": 500
-              }
-            ]
-          },
-          "unit": "watt"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 17
-      },
-      "id": 3009,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(latest_grid) as \"Grid Power (W)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name,\n    grid_power as latest_grid\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  AND grid_power IS NOT NULL\n  ORDER BY inverter_name, time DESC\n) sub",
-          "refId": "A"
-        }
-      ],
-      "title": "⚡ Grid",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220–240V.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -779,36 +347,32 @@
                 "value": 0
               },
               {
-                "color": "orange",
-                "value": 220
+                "color": "yellow",
+                "value": 50
               },
               {
                 "color": "green",
-                "value": 230
-              },
-              {
-                "color": "orange",
-                "value": 250
+                "value": 80
               }
             ]
           },
-          "unit": "volt"
+          "unit": "percent",
+          "decimals": 1
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 24,
-        "x": 0,
-        "y": 21
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 5
       },
-      "id": 3010,
+      "id": 6,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -817,10 +381,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -832,11 +392,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, grid_voltage\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND grid_voltage IS NOT NULL\nORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT NOW() AS time,\n  ROUND(\n    CASE WHEN load_kwh > 0\n    THEN LEAST(100, GREATEST(0, (1 - grid_kwh / NULLIF(load_kwh,0)) * 100))\n    ELSE 0 END ::numeric, 1) AS \"Self Sufficiency (%)\"\nFROM (\n  SELECT\n    COALESCE((SELECT MIN(val) FROM (\n      SELECT DISTINCT ON (inverter_name)\n        inverter_name, daily_load_energy AS val\n      FROM solar_readings\n      WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')\n                   AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n      AND site_name ILIKE ${site:singlequote}\n      AND daily_load_energy IS NOT NULL AND daily_load_energy > 0 AND daily_load_energy < 100\n      ORDER BY inverter_name, time DESC) sub), 1) AS load_kwh,\n    COALESCE((SELECT MAX(val) FROM (\n      SELECT DISTINCT ON (inverter_name)\n        inverter_name, daily_grid_import AS val\n      FROM solar_readings\n      WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')\n                   AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n      AND site_name ILIKE ${site:singlequote}\n      AND daily_grid_import IS NOT NULL AND daily_grid_import >= 0\n      ORDER BY inverter_name, time DESC) sub), 0) AS grid_kwh\n) t",
           "refId": "A"
         }
       ],
-      "title": "Grid Voltage",
+      "title": "\ud83d\udcb0 Self-Sufficiency",
       "type": "stat"
     },
     {
@@ -845,11 +405,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 9
       },
-      "id": 3011,
+      "id": 10,
       "panels": [],
-      "title": "☀️  TODAY",
+      "title": "\ud83d\udcca TODAY'S ENERGY",
       "type": "row"
     },
     {
@@ -857,13 +417,12 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Total solar energy generated today across all inverters. Resets at midnight.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -882,7 +441,8 @@
               }
             ]
           },
-          "unit": "kwatth"
+          "unit": "kwh",
+          "decimals": 1
         },
         "overrides": []
       },
@@ -890,15 +450,14 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 25
+        "y": 10
       },
-      "id": 3013,
+      "id": 11,
       "options": {
         "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
+        "graphMode": "area",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -907,10 +466,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -922,11 +477,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time, SUM(val) as \"Today PV (kWh)\" FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_pv_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy IS NOT NULL\n  AND daily_pv_energy > 0\n  AND daily_pv_energy < 100\n  ORDER BY inverter_name, time DESC\n)",
+          "rawSql": "SELECT NOW() AS time,\n  SUM(val) AS \"PV Today (kWh)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_pv_energy AS val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')\n               AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy IS NOT NULL\n  AND daily_pv_energy > 0\n  AND daily_pv_energy < 100\n  ORDER BY inverter_name, time DESC\n) sub",
           "refId": "A"
         }
       ],
-      "title": "PV Generated",
+      "title": "\u2600\ufe0f PV Today",
       "type": "stat"
     },
     {
@@ -934,13 +489,12 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Total load energy consumed today across all inverters. Resets at midnight.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 1,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -954,12 +508,13 @@
                 "value": 20
               },
               {
-                "color": "orange",
-                "value": 35
+                "color": "red",
+                "value": 40
               }
             ]
           },
-          "unit": "kwatth"
+          "unit": "kwh",
+          "decimals": 1
         },
         "overrides": []
       },
@@ -967,92 +522,14 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 25
+        "y": 10
       },
-      "id": 3014,
+      "id": 12,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT NOW() as time, MIN(val) as \"Today Load (kWh)\" FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_load_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_load_energy IS NOT NULL\n  AND daily_load_energy > 0\n  AND daily_load_energy < 100\n  ORDER BY inverter_name, time DESC\n)",
-          "refId": "A"
-        }
-      ],
-      "title": "Load Consumed",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Total solar energy generated today across all inverters. Resets at midnight.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 1,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 15
-              }
-            ]
-          },
-          "unit": "kwh"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 25
-      },
-      "id": 3012,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1072,11 +549,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(val), 0) as \"Today Grid Import (kWh)\"\nFROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_grid_import as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND daily_grid_import > 0\n  AND daily_grid_import < 500\n  ORDER BY inverter_name, time DESC\n)",
+          "rawSql": "SELECT NOW() AS time, COALESCE((SELECT MIN(val) FROM (\n      SELECT DISTINCT ON (inverter_name)\n        inverter_name, daily_load_energy AS val\n      FROM solar_readings\n      WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')\n                   AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n      AND site_name ILIKE ${site:singlequote}\n      AND daily_load_energy IS NOT NULL AND daily_load_energy > 0 AND daily_load_energy < 100\n      ORDER BY inverter_name, time DESC) sub), 0) AS \"kWh\" ",
           "refId": "A"
         }
       ],
-      "title": "Grid Import",
+      "title": "\ud83c\udfe0 Load Today",
       "type": "stat"
     },
     {
@@ -1084,97 +561,13 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate — switchable via the Cost Calc Mode dropdown.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 2,
           "mappings": [],
-          "noValue": "R 0.00",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
-                "color": "orange",
-                "value": 150
-              },
-              {
-                "color": "red",
-                "value": 300
-              }
-            ]
-          },
-          "unit": "currencyZAR"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 29
-      },
-      "id": 3015,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  CASE\n  WHEN '${calc_mode}' = 'flat' THEN ROUND((grid_kwh * ${rate}::numeric)::numeric, 2)\n  ELSE ROUND((CASE WHEN grid_kwh<=0 THEN 0 WHEN grid_kwh<=100 THEN grid_kwh*2.9790\n    WHEN grid_kwh<=400 THEN 100*2.9790+(grid_kwh-100)*3.4864\n    WHEN grid_kwh<=650 THEN 100*2.9790+300*3.4864+(grid_kwh-400)*3.7983\n    ELSE 100*2.9790+300*3.4864+250*3.7983+(grid_kwh-650)*4.0948 END*1.15)::numeric,2)\n  END as \"Today Grid Cost (R)\"\nFROM (SELECT COALESCE(MAX(val),0) as grid_kwh FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_grid_import as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND daily_grid_import > 0\n  AND daily_grid_import < 500\n  ORDER BY inverter_name, time DESC\n)) g",
-          "refId": "A"
-        }
-      ],
-      "title": "Grid Cost",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Estimated savings from solar generation today — the cost you avoided by not importing this energy from the grid.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 2,
-          "mappings": [],
-          "noValue": "R 0.00",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1183,32 +576,28 @@
                 "value": 0
               },
               {
-                "color": "yellow",
-                "value": 50
-              },
-              {
                 "color": "green",
-                "value": 100
+                "value": 20
               }
             ]
           },
-          "unit": "currencyZAR"
+          "unit": "currencyZAR",
+          "decimals": 1
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 29
+        "w": 8,
+        "x": 16,
+        "y": 10
       },
-      "id": 3016,
+      "id": 13,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1217,10 +606,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -1232,25 +617,37 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  CASE\n  WHEN '${calc_mode}' = 'flat' THEN ROUND((load_kwh * ${rate}::numeric)::numeric, 2)\n  ELSE ROUND((CASE WHEN load_kwh<=0 THEN 0 WHEN load_kwh<=100 THEN load_kwh*2.9790\n    WHEN load_kwh<=400 THEN 100*2.9790+(load_kwh-100)*3.4864\n    WHEN load_kwh<=650 THEN 100*2.9790+300*3.4864+(load_kwh-400)*3.7983\n    ELSE 100*2.9790+300*3.4864+250*3.7983+(load_kwh-650)*4.0948 END*1.15)::numeric,2)\n  END - CASE\n  WHEN '${calc_mode}' = 'flat' THEN ROUND((grid_kwh * ${rate}::numeric)::numeric, 2)\n  ELSE ROUND((CASE WHEN grid_kwh<=0 THEN 0 WHEN grid_kwh<=100 THEN grid_kwh*2.9790\n    WHEN grid_kwh<=400 THEN 100*2.9790+(grid_kwh-100)*3.4864\n    WHEN grid_kwh<=650 THEN 100*2.9790+300*3.4864+(grid_kwh-400)*3.7983\n    ELSE 100*2.9790+300*3.4864+250*3.7983+(grid_kwh-650)*4.0948 END*1.15)::numeric,2)\n  END as \"Today Solar Savings (R)\"\nFROM (\n  SELECT\n    COALESCE((SELECT MIN(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_load_energy as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_load_energy IS NOT NULL\n  AND daily_load_energy > 0\n  AND daily_load_energy < 100\n  ORDER BY inverter_name, time DESC\n)), 1) as load_kwh,\n    COALESCE((SELECT MAX(val) FROM (\n  SELECT DISTINCT ON (inverter_name)\n    inverter_name, daily_grid_import as val\n  FROM solar_readings\n  WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_grid_import IS NOT NULL\n  AND daily_grid_import > 0\n  AND daily_grid_import < 500\n  ORDER BY inverter_name, time DESC\n)), 0) as grid_kwh\n) t",
+          "rawSql": "SELECT NOW() AS time,\n  CASE WHEN '${calc_mode}' = 'flat'\n    THEN ROUND(((load_kwh - grid_kwh) * ${rate}::numeric)::numeric, 2)\n  ELSE ROUND((\n    (CASE WHEN load_kwh<=0 THEN 0 WHEN load_kwh<=100 THEN load_kwh*2.9790\n          WHEN load_kwh<=400 THEN 100*2.9790+(load_kwh-100)*3.4864\n          WHEN load_kwh<=650 THEN 100*2.9790+300*3.4864+(load_kwh-400)*3.7983\n          ELSE 100*2.9790+300*3.4864+250*3.7983+(load_kwh-650)*4.0948 END\n     - CASE WHEN grid_kwh<=0 THEN 0 WHEN grid_kwh<=100 THEN grid_kwh*2.9790\n            WHEN grid_kwh<=400 THEN 100*2.9790+(grid_kwh-100)*3.4864\n            WHEN grid_kwh<=650 THEN 100*2.9790+300*3.4864+(grid_kwh-400)*3.7983\n            ELSE 100*2.9790+300*3.4864+250*3.7983+(grid_kwh-650)*4.0948 END\n    ) * 1.15)::numeric, 2)\n  END AS \"Solar Savings (R)\"\nFROM (\n  SELECT\n    COALESCE((SELECT MIN(val) FROM (\n      SELECT DISTINCT ON (inverter_name)\n        inverter_name, daily_load_energy AS val\n      FROM solar_readings\n      WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')\n                   AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n      AND site_name ILIKE ${site:singlequote}\n      AND daily_load_energy IS NOT NULL AND daily_load_energy > 0 AND daily_load_energy < 100\n      ORDER BY inverter_name, time DESC) sub), 1) AS load_kwh,\n    COALESCE((SELECT MAX(val) FROM (\n      SELECT DISTINCT ON (inverter_name)\n        inverter_name, daily_grid_import AS val\n      FROM solar_readings\n      WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')\n                   AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'\n      AND site_name ILIKE ${site:singlequote}\n      AND daily_grid_import IS NOT NULL AND daily_grid_import >= 0\n      ORDER BY inverter_name, time DESC) sub), 0) AS grid_kwh\n) t",
           "refId": "A"
         }
       ],
-      "title": "Solar Savings",
+      "title": "\ud83d\udcb8 Solar Savings",
       "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 20,
+      "panels": [],
+      "title": "\ud83c\udfc6 TODAY'S PEAKS",
+      "type": "row"
     },
     {
       "datasource": {
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Peak combined solar output recorded today across all inverters.",
+      "description": "Highest combined PV output in any single minute today.",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 0,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1269,23 +666,23 @@
               }
             ]
           },
-          "unit": "watt"
+          "unit": "watt",
+          "decimals": 1
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 12,
+        "w": 8,
         "x": 0,
-        "y": 33
+        "y": 15
       },
-      "id": 3025,
+      "id": 21,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1294,10 +691,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -1309,11 +702,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak PV (W)\"\nFROM (\n  SELECT ts, SUM(avg_pv) as minute_total\n  FROM (\n    SELECT\n      DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(pv1_power + COALESCE(pv2_power, 0)) as avg_pv\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    AND (pv1_power > 0 OR COALESCE(pv2_power, 0) > 0)\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
+          "rawSql": "SELECT NOW() AS time, COALESCE(MAX(minute_total), 0) AS \"Peak PV (W)\"\nFROM (\n  SELECT ts, SUM(avg_pv) AS minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) AS ts, inverter_name,\n      AVG(pv1_power + COALESCE(pv2_power,0)) AS avg_pv\n    FROM solar_readings\n    WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\n    AND (pv1_power > 0 OR COALESCE(pv2_power,0) > 0)\n    GROUP BY 1, 2) inv\n  GROUP BY ts) sub",
           "refId": "A"
         }
       ],
-      "title": "Peak Solar Today",
+      "title": "\u26a1 Peak Solar",
       "type": "stat"
     },
     {
@@ -1321,13 +714,12 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Peak combined load recorded today across all inverters.",
+      "description": "Highest combined load in any single minute today.",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 0,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1338,35 +730,31 @@
               },
               {
                 "color": "yellow",
-                "value": 4000
-              },
-              {
-                "color": "orange",
-                "value": 7000
+                "value": 3000
               },
               {
                 "color": "red",
-                "value": 9000
+                "value": 8000
               }
             ]
           },
-          "unit": "watt"
+          "unit": "watt",
+          "decimals": 1
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 33
+        "w": 8,
+        "x": 8,
+        "y": 15
       },
-      "id": 3026,
+      "id": 22,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
-        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1375,10 +763,6 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
         "textMode": "auto",
         "wideLayout": true
       },
@@ -1390,11 +774,83 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  COALESCE(MAX(minute_total), 0) as \"Peak Load (W)\"\nFROM (\n  SELECT ts,\n    SUM(avg_load) as minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) as ts,\n      inverter_name,\n      AVG(load_power) as avg_load\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
+          "rawSql": "SELECT NOW() AS time, COALESCE(MAX(minute_total), 0) AS \"Peak Load (W)\"\nFROM (\n  SELECT ts, SUM(avg_load) AS minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) AS ts, inverter_name,\n      AVG(load_power) AS avg_load\n    FROM solar_readings\n    WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\n    GROUP BY 1, 2) inv\n  GROUP BY ts) sub",
           "refId": "A"
         }
       ],
-      "title": "Peak Load Today",
+      "title": "\ud83c\udfe0 Peak Load",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Highest combined grid import in any single minute today.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 2000
+              },
+              {
+                "color": "red",
+                "value": 5000
+              }
+            ]
+          },
+          "unit": "watt",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      },
+      "id": 23,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT NOW() AS time, COALESCE(MAX(minute_total), 0) AS \"Peak Grid (W)\"\nFROM (\n  SELECT ts, SUM(avg_grid) AS minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) AS ts, inverter_name,\n      AVG(grid_power) AS avg_grid\n    FROM solar_readings\n    WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\n    AND grid_power > 0\n    GROUP BY 1, 2) inv\n  GROUP BY ts) sub",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83d\udd0c Peak Grid Draw",
       "type": "stat"
     },
     {
@@ -1403,11 +859,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 19
       },
-      "id": 3017,
+      "id": 30,
       "panels": [],
-      "title": "📈  CHARTS",
+      "title": "\u2601\ufe0f WEATHER",
       "type": "row"
     },
     {
@@ -1415,7 +871,460 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Solar PV power output over time, one line per inverter. Shows generation profile throughout the day.",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 15
+              },
+              {
+                "color": "yellow",
+                "value": 28
+              },
+              {
+                "color": "red",
+                "value": 36
+              }
+            ]
+          },
+          "unit": "celsius",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 20
+      },
+      "id": 31,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, temp_c AS \"Temp \u00b0C\"\nFROM weather_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83c\udf21\ufe0f Temperature",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 40
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 20
+      },
+      "id": 32,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, cloud_cover AS \"Cloud %\"\nFROM weather_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "\u2601\ufe0f Cloud Cover",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "green",
+                "value": 600
+              }
+            ]
+          },
+          "unit": "wm2",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 20
+      },
+      "id": 33,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, solar_rad AS \"W/m\u00b2\"\nFROM weather_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "\u2600\ufe0f Solar Radiation",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "velocitykmh",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      },
+      "id": 34,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, wind_speed AS \"km/h\"\nFROM weather_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83d\udca8 Wind",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 24
+      },
+      "id": 35,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, humidity AS \"Hum %\"\nFROM weather_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83d\udca7 Humidity",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "orange",
+                "value": 6
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          },
+          "unit": "short",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 24
+      },
+      "id": 36,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, uv_index AS \"UV\"\nFROM weather_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote}\nORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83c\udf1e UV Index",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "id": 40,
+      "panels": [],
+      "title": "\ud83d\udcc8 POWER TRENDS",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1430,7 +1339,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1438,9 +1347,9 @@
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -1475,152 +1384,70 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Combined Total (W)"
+              "options": "Solar (W)"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "rgba(255,255,255,0.18)",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "#f5a623"
                 }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 3
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 25
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "fill": "solid"
-                }
-              },
-              {
-                "id": "custom.fillBelowTo",
-                "value": ""
-              },
-              {
-                "id": "displayName",
-                "value": "Combined Total (W)"
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "PV Power (W) Inverter_1"
+              "options": "Load (W)"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#2ecc71",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "#4fc3f7"
                 }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "PV Power (W) Inverter_2"
+              "options": "Grid (W)"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#f5a623",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "#e74c3c"
                 }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "PV Power (W) Inverter_3"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#4fc3f7",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "PV Power (W) Inverter_4"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#9b59b6",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 29
       },
-      "id": 3018,
+      "id": 41,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
-          "hideZeros": false,
           "mode": "multi",
-          "sort": "desc"
+          "sort": "none"
         }
       },
       "pluginVersion": "12.3.0",
@@ -1631,7 +1458,7 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(pv1_power + COALESCE(pv2_power,0)) as \"PV Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
+          "rawSql": "SELECT minute AS time, SUM(avg_pv) AS \"Solar (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) AS minute,\n    inverter_name,\n    AVG(pv1_power + COALESCE(pv2_power, 0)) AS avg_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) inv\nGROUP BY minute ORDER BY minute",
           "refId": "A"
         },
         {
@@ -1640,11 +1467,20 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  minute AS time,\n  SUM(avg_pv) as \"Combined Total (W)\"\nFROM (\n  SELECT\n    DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(pv1_power + COALESCE(pv2_power, 0)) as avg_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nGROUP BY minute ORDER BY minute",
+          "rawSql": "SELECT minute AS time, SUM(avg_load) AS \"Load (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) AS minute,\n    inverter_name,\n    AVG(load_power) AS avg_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) inv\nGROUP BY minute ORDER BY minute",
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT minute AS time, SUM(avg_grid) AS \"Grid (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) AS minute,\n    inverter_name,\n    AVG(grid_power) AS avg_grid\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) inv\nGROUP BY minute ORDER BY minute",
+          "refId": "C"
         }
       ],
-      "title": "Solar PV Power",
+      "title": "\u26a1 Solar \u00b7 Load \u00b7 Grid",
       "type": "timeseries"
     },
     {
@@ -1652,7 +1488,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Battery charge/discharge power (positive = charging, negative = discharging) and state of charge percentage over time.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1667,7 +1503,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1675,9 +1511,9 @@
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
             "lineWidth": 2,
-            "pointSize": 5,
+            "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -1712,27 +1548,225 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "SOC (%)"
+              "options": "Battery Power (W)"
             },
             "properties": [
               {
-                "id": "unit",
-                "value": "percent"
-              },
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2ecc71"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SOC (%)"
+            },
+            "properties": [
               {
                 "id": "custom.axisPlacement",
                 "value": "right"
               },
               {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#73BF69",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "#27ae60"
                 }
               },
               {
-                "id": "displayName",
-                "value": "SOC %"
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    6,
+                    3
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 42,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT minute AS time, SUM(avg_batt) * -1 AS \"Battery Power (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) AS minute,\n    inverter_name,\n    AVG(battery_power) AS avg_batt\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) inv\nGROUP BY minute ORDER BY minute",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT DATE_TRUNC('minute', time) AS time,\n  AVG(battery_soc) AS \"SOC (%)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1 ORDER BY 1",
+          "refId": "B"
+        }
+      ],
+      "title": "\ud83d\udd0b Battery Power & SOC",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "id": 50,
+      "panels": [],
+      "title": "\u2601\ufe0f WEATHER TRENDS",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PV Power (W)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#f5a623"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 15
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cloud Cover (%)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8090b8"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 8
               },
               {
                 "id": "min",
@@ -1747,42 +1781,58 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Battery Power (W)"
+              "options": "Solar Rad (W/m\u00b2)"
             },
             "properties": [
               {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "wm2"
+              },
+              {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#5794F2",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
                 }
               },
               {
-                "id": "displayName",
-                "value": "Battery Power (+charge/-discharge)"
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    6,
+                    3
+                  ],
+                  "fill": "dash"
+                }
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 48
       },
-      "id": 3019,
+      "id": 51,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
-          "hideZeros": false,
           "mode": "multi",
-          "sort": "desc"
+          "sort": "none"
         }
       },
       "pluginVersion": "12.3.0",
@@ -1793,11 +1843,29 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  minute AS time,\n  AVG(soc)         as \"SOC (%)\",\n  SUM(avg_batt) * -1 as \"Battery Power (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(battery_soc)   as soc,\n    AVG(battery_power) as avg_batt\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nGROUP BY minute ORDER BY minute",
+          "rawSql": "SELECT minute AS time, SUM(avg_pv) AS \"PV Power (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) AS minute,\n    inverter_name,\n    AVG(pv1_power + COALESCE(pv2_power, 0)) AS avg_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) inv\nGROUP BY minute ORDER BY minute",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, cloud_cover AS \"Cloud Cover (%)\"\nFROM weather_readings WHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote} ORDER BY time",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, solar_rad AS \"Solar Rad (W/m\u00b2)\"\nFROM weather_readings WHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote} ORDER BY time",
+          "refId": "C"
         }
       ],
-      "title": "Battery Power & SOC",
+      "title": "\u2601\ufe0f Cloud Cover & Solar Radiation vs PV",
       "type": "timeseries"
     },
     {
@@ -1805,7 +1873,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Load power consumption over time, one line per inverter.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1820,7 +1888,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1828,9 +1896,9 @@
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -1859,158 +1927,62 @@
               }
             ]
           },
-          "unit": "watt"
+          "unit": "celsius"
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "Combined Load (W)"
+              "options": "Humidity (%)"
             },
             "properties": [
               {
-                "id": "color",
-                "value": {
-                  "fixedColor": "rgba(255,255,255,0.18)",
-                  "mode": "fixed"
-                }
+                "id": "custom.axisPlacement",
+                "value": "right"
               },
               {
-                "id": "custom.lineWidth",
-                "value": 3
+                "id": "unit",
+                "value": "percent"
               },
               {
-                "id": "custom.fillOpacity",
-                "value": 25
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "fill": "solid"
-                }
-              },
-              {
-                "id": "custom.fillBelowTo",
-                "value": ""
-              },
-              {
-                "id": "displayName",
-                "value": "Combined Load (W)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Load Power (W) Inverter_1"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#2ecc71",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
+                "id": "min",
                 "value": 0
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Load Power (W) Inverter_2"
-            },
-            "properties": [
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#f5a623",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "#4fc3f7"
                 }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Load Power (W) Inverter_3"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#4fc3f7",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Load Power (W) Inverter_4"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#9b59b6",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 57
       },
-      "id": 3027,
+      "id": 52,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
-          "hideZeros": false,
           "mode": "multi",
-          "sort": "desc"
+          "sort": "none"
         }
       },
       "pluginVersion": "12.3.0",
@@ -2020,28 +1992,9 @@
             "type": "postgres",
             "uid": "solarwatch_pg"
           },
-          "editorMode": "code",
           "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(load_power) as \"Load Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "SELECT time, temp_c AS \"Temp (\u00b0C)\", feels_like_c AS \"Feels Like (\u00b0C)\"\nFROM weather_readings WHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote} ORDER BY time",
+          "refId": "A"
         },
         {
           "datasource": {
@@ -2049,20 +2002,32 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  minute AS time,\n  SUM(avg_load) as \"Combined Load (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(load_power) as avg_load\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nGROUP BY minute ORDER BY minute",
+          "rawSql": "SELECT time, humidity AS \"Humidity (%)\"\nFROM weather_readings WHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote} ORDER BY time",
           "refId": "B"
         }
       ],
-      "title": "Load Power — Per Inverter & Combined",
+      "title": "\ud83c\udf21\ufe0f Temperature & Humidity",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 66
+      },
+      "id": 60,
+      "panels": [],
+      "title": "\ud83c\udf21\ufe0f INVERTER TEMPERATURES",
+      "type": "row"
     },
     {
       "datasource": {
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Combined grid power draw (W) and grid voltage (V) over time. Power near zero indicates the system is running on solar/battery.",
+      "description": "Inverter, DC heatsink and battery temperatures per inverter. High inverter temps (>70\u00b0C) indicate thermal stress. Sentinel filters remove offset-encoded zero readings.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2085,9 +2050,9 @@
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
             "lineWidth": 2,
-            "pointSize": 5,
+            "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -2099,7 +2064,7 @@
               "mode": "none"
             },
             "thresholdsStyle": {
-              "mode": "off"
+              "mode": "line+area"
             }
           },
           "mappings": [],
@@ -2107,90 +2072,93 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "transparent",
                 "value": 0
               },
               {
+                "color": "orange",
+                "value": 65
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 75
               }
             ]
           },
-          "unit": "watt"
+          "unit": "celsius"
         },
         "overrides": [
           {
             "matcher": {
-              "id": "byName",
-              "options": "Grid Power (W)"
+              "id": "byRegexp",
+              "options": "DC Temp.*"
             },
             "properties": [
               {
-                "id": "color",
+                "id": "custom.lineStyle",
                 "value": {
-                  "fixedColor": "#FADE2A",
-                  "mode": "fixed"
+                  "dash": [
+                    6,
+                    3
+                  ],
+                  "fill": "dash"
                 }
               },
               {
-                "id": "displayName",
-                "value": "Grid Power (W)"
+                "id": "custom.lineWidth",
+                "value": 1
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "Grid Voltage (V)"
+              "id": "byRegexp",
+              "options": "Batt Temp.*"
             },
             "properties": [
               {
-                "id": "unit",
-                "value": "volt"
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    2,
+                    4
+                  ],
+                  "fill": "dot"
+                }
               },
               {
-                "id": "custom.axisPlacement",
-                "value": "right"
+                "id": "custom.lineWidth",
+                "value": 1
               },
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#8AB8FF",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixedColor": "#4fc3f7"
                 }
-              },
-              {
-                "id": "displayName",
-                "value": "Grid Voltage (V)"
-              },
-              {
-                "id": "min",
-                "value": 220
-              },
-              {
-                "id": "max",
-                "value": 250
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 7,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 67
       },
-      "id": 3020,
+      "id": 61,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
-          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
@@ -2203,267 +2171,36 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  minute AS time,\n  SUM(avg_grid)    as \"Grid Power (W)\",\n  AVG(avg_voltage) as \"Grid Voltage (V)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) as minute,\n    inverter_name,\n    AVG(grid_power)   as avg_grid,\n    AVG(grid_voltage) as avg_voltage\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) sub\nGROUP BY minute ORDER BY minute",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 Inv Temp' AS metric,\n  AVG(CASE WHEN inverter_temp < 100 THEN inverter_temp END) AS \"Inverter Temp (\u00b0C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND inverter_temp IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 DC Temp' AS metric,\n  AVG(CASE WHEN dc_temp < 100 THEN dc_temp END) AS \"DC Temp (\u00b0C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND dc_temp IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 Batt Temp' AS metric,\n  AVG(CASE WHEN battery_temp > 0 THEN battery_temp END) AS \"Batt Temp (\u00b0C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND battery_temp IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "C"
         }
       ],
-      "title": "Grid Power & Voltage",
+      "title": "\ud83c\udf21\ufe0f Inverter \u00b7 DC \u00b7 Battery Temperatures",
       "type": "timeseries"
-    },
-    {
-      "collapsed": true,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 69
-      },
-      "id": 3021,
-      "panels": [],
-      "title": "📅  THIS MONTH",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Total solar energy generated this calendar month across all inverters.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 1,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 100
-              },
-              {
-                "color": "green",
-                "value": 300
-              }
-            ]
-          },
-          "unit": "kwatth"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 0,
-        "y": 70
-      },
-      "id": 3022,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(eod_pv) as \"PV Generated (kWh)\"\nFROM (\n  SELECT DISTINCT ON (DATE(time AT TIME ZONE 'Africa/Johannesburg'), inverter_name)\n    DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    inverter_name,\n    daily_pv_energy as eod_pv\n  FROM solar_readings\n  WHERE DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND site_name ILIKE ${site:singlequote}\n  AND daily_pv_energy IS NOT NULL\n  ORDER BY DATE(time AT TIME ZONE 'Africa/Johannesburg'), inverter_name, time DESC\n) sub",
-          "refId": "A"
-        }
-      ],
-      "title": "PV Generated",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Total grid electricity cost this calendar month using selected tariff.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 2,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 500
-              },
-              {
-                "color": "orange",
-                "value": 1000
-              },
-              {
-                "color": "red",
-                "value": 2000
-              }
-            ]
-          },
-          "unit": "currencyZAR"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 8,
-        "y": 70
-      },
-      "id": 3023,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  SUM(CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((kwh * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN kwh <= 0   THEN 0\n          WHEN kwh <= 100 THEN kwh * 2.9790\n          WHEN kwh <= 400 THEN 100*2.9790 + (kwh-100)*3.4864\n          WHEN kwh <= 650 THEN 100*2.9790 + 300*3.4864 + (kwh-400)*3.7983\n          ELSE                    100*2.9790 + 300*3.4864 + 250*3.7983 + (kwh-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END) as \"Grid Cost (R)\"\nFROM (\n  SELECT DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n    MAX(daily_grid_import) as kwh\n  FROM solar_readings\n  WHERE inverter_name = (SELECT MIN(inverter_name) FROM solar_readings WHERE $__timeFilter(time) AND site_name ILIKE ${site:singlequote})\n  AND site_name ILIKE ${site:singlequote}\n  AND DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n  AND daily_grid_import BETWEEN 0.01 AND 9000\n  GROUP BY 1\n) sub",
-          "refId": "A"
-        }
-      ],
-      "title": "Grid Cost",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "solarwatch_pg"
-      },
-      "description": "Total solar savings this calendar month — electricity cost avoided through solar generation.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 2,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 500
-              },
-              {
-                "color": "green",
-                "value": 1000
-              }
-            ]
-          },
-          "unit": "currencyZAR"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 70
-      },
-      "id": 3024,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 14,
-          "valueSize": 30
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "solarwatch_pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT NOW() as time,\n  CASE\n      WHEN '${calc_mode}' = 'flat' THEN ROUND((pv_total * ${rate}::numeric)::numeric, 2)\n      ELSE ROUND((\n        CASE\n          WHEN pv_total <= 0   THEN 0\n          WHEN pv_total <= 100 THEN pv_total * 2.9790\n          WHEN pv_total <= 400 THEN 100*2.9790 + (pv_total-100)*3.4864\n          WHEN pv_total <= 650 THEN 100*2.9790 + 300*3.4864 + (pv_total-400)*3.7983\n          ELSE                    100*2.9790 + 300*3.4864 + 250*3.7983 + (pv_total-650)*4.0948\n        END * 1.15\n      )::numeric, 2)\n    END as \"Solar Savings (R)\"\nFROM (\n  SELECT SUM(eod_pv) as pv_total\n  FROM (\n    SELECT DISTINCT ON (DATE(time AT TIME ZONE 'Africa/Johannesburg'), inverter_name)\n      DATE(time AT TIME ZONE 'Africa/Johannesburg') as day,\n      inverter_name,\n      daily_pv_energy as eod_pv\n    FROM solar_readings\n    WHERE DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg') = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')\n    AND site_name ILIKE ${site:singlequote}\n    AND daily_pv_energy IS NOT NULL\n    ORDER BY DATE(time AT TIME ZONE 'Africa/Johannesburg'), inverter_name, time DESC\n  ) sub\n) t",
-          "refId": "A"
-        }
-      ],
-      "title": "Solar Savings",
-      "type": "stat"
     }
   ],
-  "preload": false,
   "refresh": "1m",
-  "schemaVersion": 42,
+  "schemaVersion": 39,
   "tags": [
-    "solar",
+    "solarwatch",
     "mobile"
   ],
   "templating": {
@@ -2508,19 +2245,19 @@
       },
       {
         "current": {
-          "text": "ibt",
-          "value": "ibt"
+          "text": "flat",
+          "value": "flat"
         },
         "label": "Cost Calc Mode",
         "name": "calc_mode",
         "options": [
           {
-            "selected": true,
+            "selected": false,
             "text": "ibt",
             "value": "ibt"
           },
           {
-            "selected": false,
+            "selected": true,
             "text": "flat",
             "value": "flat"
           }
@@ -2576,18 +2313,10 @@
     "from": "now/d",
     "to": "now"
   },
-  "timepicker": {
-    "refresh_intervals": [
-      "30s",
-      "1m",
-      "5m",
-      "15m",
-      "30m",
-      "1h"
-    ]
-  },
-  "timezone": "browser",
-  "title": "SolarWatch — Mobile",
+  "timepicker": {},
+  "timezone": "Africa/Johannesburg",
+  "title": "SolarWatch \u2014 Mobile",
   "uid": "solarwatch-mobile",
-  "version": 3
+  "version": 2,
+  "weekStart": ""
 }

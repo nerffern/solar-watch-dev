@@ -12,6 +12,8 @@ Serves:
     GET /              → full-screen power flow page
     GET /api/sites     → list of sites
     GET /api/flow      → live power data JSON
+    GET /api/weather   → latest weather reading for a site
+    GET /api/chart/*   → chart data for the Advanced view
 """
 
 import os
@@ -204,7 +206,7 @@ HTML = r"""<!DOCTYPE html>
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
 
 /* ── APP SHELL ── */
-.app{display:grid;grid-template-rows:5.5vh 1fr 11vh;height:100vh;width:100vw}
+.app{display:grid;grid-template-rows:5.5vh auto 1fr 11vh;height:100vh;width:100vw}
 
 /* ── HEADER ── */
 header{
@@ -373,6 +375,30 @@ footer{
 .st-lbl{font-size:clamp(8px,.75vw,11px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
 .st-val{font-size:clamp(13px,1.5vw,24px);font-family:var(--mono);font-weight:500}
 
+/* ── WEATHER STRIP ── */
+.wx-strip{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.5vw;height:clamp(32px,4vh,48px);
+  background:var(--s2);border-bottom:1px solid var(--border);
+  flex-shrink:0;gap:1.5vw;overflow:hidden;
+}
+.wx-left{display:flex;align-items:center;gap:1vw;flex-shrink:0}
+.wx-icon{font-size:clamp(16px,2vw,26px);line-height:1}
+.wx-desc{font-size:clamp(10px,.9vw,14px);color:var(--text);font-weight:600;white-space:nowrap}
+.wx-site{font-size:clamp(9px,.8vw,12px);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.wx-pills{display:flex;align-items:center;gap:clamp(6px,1.2vw,24px);flex-wrap:nowrap;overflow:hidden}
+.wx-pill{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0}
+.wx-pill-lbl{font-size:clamp(7px,.65vw,10px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.wx-pill-val{font-size:clamp(11px,1.1vw,17px);font-family:var(--mono);font-weight:600;color:var(--text);white-space:nowrap}
+.wx-right{display:flex;align-items:center;gap:1vw;flex-shrink:0}
+.wx-sun{font-size:clamp(9px,.8vw,12px);color:var(--muted);font-family:var(--mono);white-space:nowrap}
+/* Cloud cover bar */
+.wx-cloud-wrap{display:flex;align-items:center;gap:6px}
+.wx-cloud-bar{width:clamp(40px,5vw,80px);height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.wx-cloud-fill{height:100%;border-radius:3px;background:var(--muted);transition:width .8s ease}
+/* Weather strip loading/no-data state */
+.wx-strip.wx-empty{opacity:.4}
+
 /* IBT rate selector (hidden when flat mode) */
 #ibt-select{display:none}
 #flat-input-wrap{display:flex;align-items:center;gap:4px}
@@ -387,8 +413,8 @@ footer{
   /* Allow page to scroll on mobile instead of hard-clipping */
   html,body{overflow:auto}
 
-  /* Tighter grid rows: smaller header, auto main, compact footer */
-  .app{grid-template-rows:auto 1fr auto;min-height:100vh;height:auto}
+  /* Tighter grid rows: smaller header, auto weather strip, auto main, compact footer */
+  .app{grid-template-rows:auto auto 1fr auto;min-height:100vh;height:auto}
 
   /* ── HEADER ── */
   header{
@@ -501,6 +527,16 @@ footer{
   /* Clock is huge on desktop — reset to normal on mobile */
   #clock{font-size:clamp(12px,3.5vw,18px)!important;font-weight:500!important}
 
+  /* ── WEATHER STRIP mobile ── */
+  .wx-strip{
+    height:auto;
+    flex-wrap:wrap;
+    padding:6px 12px;
+    gap:8px;
+  }
+  .wx-pills{flex-wrap:wrap;gap:8px}
+  .wx-right{display:none} /* hide sunrise/sunset on mobile — space is premium */
+
   /* ── ADVANCED VIEW ── */
   /* Single column on mobile */
   .adv-inner{
@@ -598,6 +634,59 @@ footer{
     <div class="age-badge"><div class="dot" id="dot"></div><span id="age">—</span></div>
   </div>
 </header>
+
+<!-- WEATHER STRIP -->
+<div class="wx-strip wx-empty" id="wx-strip">
+  <div class="wx-left">
+    <span class="wx-icon" id="wx-icon">—</span>
+    <div>
+      <div class="wx-desc" id="wx-desc">Loading weather…</div>
+      <div class="wx-site" id="wx-site">—</div>
+    </div>
+  </div>
+  <div class="wx-pills">
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">Temp</span>
+      <span class="wx-pill-val" id="wx-temp">—</span>
+    </div>
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">Feels</span>
+      <span class="wx-pill-val" id="wx-feels">—</span>
+    </div>
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">Cloud</span>
+      <span class="wx-pill-val">
+        <span class="wx-cloud-wrap">
+          <span id="wx-cloud-pct">—</span>
+          <span class="wx-cloud-bar"><span class="wx-cloud-fill" id="wx-cloud-bar"></span></span>
+        </span>
+      </span>
+    </div>
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">Rain</span>
+      <span class="wx-pill-val" id="wx-rain">—</span>
+    </div>
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">Wind</span>
+      <span class="wx-pill-val" id="wx-wind">—</span>
+    </div>
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">Humidity</span>
+      <span class="wx-pill-val" id="wx-hum">—</span>
+    </div>
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">UV</span>
+      <span class="wx-pill-val" id="wx-uv">—</span>
+    </div>
+    <div class="wx-pill">
+      <span class="wx-pill-lbl">Solar Rad</span>
+      <span class="wx-pill-val" id="wx-rad">—</span>
+    </div>
+  </div>
+  <div class="wx-right">
+    <span class="wx-sun" id="wx-sun">🌅 — · 🌇 —</span>
+  </div>
+</div>
 
 <!-- VIEWS -->
 <main style="flex:1;overflow:hidden;display:flex;flex-direction:column">
@@ -1014,6 +1103,61 @@ function groupBy(arr,key){
   return m;
 }
 
+// ── WEATHER ───────────────────────────────────────────────────────────────────
+let wxTimer = null;
+
+function fmtTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Africa/Johannesburg'});
+}
+
+async function refreshWeather(){
+  if(!currentSite) return;
+  try{
+    const r = await fetch(`/api/weather?site=${encodeURIComponent(currentSite)}`);
+    const d = await r.json();
+    if(d.error || !d.temp_c) return; // no data yet — keep loading state
+    renderWeather(d);
+  } catch(e){ console.error('weather fetch:', e); }
+  wxTimer = setTimeout(refreshWeather, 10 * 60 * 1000); // refresh every 10 min
+}
+
+function renderWeather(d){
+  const strip = document.getElementById('wx-strip');
+  strip.classList.remove('wx-empty');
+
+  // PostgreSQL NUMERIC columns come back as strings in JSON — coerce everything
+  const f = v => v != null ? parseFloat(v) : null;
+  const temp  = f(d.temp_c);
+  const feels = f(d.feels_like_c);
+  const rain  = f(d.precipitation);
+  const wind  = f(d.wind_speed);
+  const uv    = f(d.uv_index);
+  const rad   = f(d.solar_rad);
+  const cloud = f(d.cloud_cover) ?? 0;
+  const hum   = d.humidity != null ? parseInt(d.humidity) : null;
+
+  document.getElementById('wx-icon').textContent   = d.emoji       || '🌡️';
+  document.getElementById('wx-desc').textContent   = d.description || '—';
+  document.getElementById('wx-site').textContent   = currentSite;
+  document.getElementById('wx-temp').textContent   = temp  != null ? temp.toFixed(1)  + '°C'    : '—';
+  document.getElementById('wx-feels').textContent  = feels != null ? feels.toFixed(1) + '°C'    : '—';
+  document.getElementById('wx-rain').textContent   = rain  != null ? rain.toFixed(1)  + ' mm'   : '—';
+  document.getElementById('wx-wind').textContent   = wind  != null ? wind.toFixed(0)  + ' km/h' : '—';
+  document.getElementById('wx-hum').textContent    = hum   != null ? hum + '%'                  : '—';
+  document.getElementById('wx-uv').textContent     = uv    != null ? uv.toFixed(1)              : '—';
+  document.getElementById('wx-rad').textContent    = rad   != null ? Math.round(rad)  + ' W/m²' : '—';
+
+  document.getElementById('wx-cloud-pct').textContent      = cloud + '%';
+  document.getElementById('wx-cloud-bar').style.width      = cloud + '%';
+  const cloudColor = cloud < 30 ? 'var(--solar)' : cloud < 70 ? 'var(--amber)' : 'var(--muted)';
+  document.getElementById('wx-cloud-bar').style.background = cloudColor;
+
+  document.getElementById('wx-sun').textContent =
+    '🌅 ' + fmtTime(d.sunrise) + '  ·  🌇 ' + fmtTime(d.sunset);
+}
+
 // ── LIVE DATA LOOP ────────────────────────────────────────────────────────────
 async function refresh(){
   if(!currentSite)return;
@@ -1030,15 +1174,20 @@ async function loadSites(){
   const sites=await r.json();
   const sel=document.getElementById('site-sel');
   sel.innerHTML=sites.map(s=>`<option value="${s.name}">${s.display}</option>`).join('');
-  if(sites.length){currentSite=sites[0].name;refresh();}
+  if(sites.length){currentSite=sites[0].name;refresh();refreshWeather();}
 }
 
 function onSiteChange(){
   currentSite=document.getElementById('site-sel').value;
   if(liveTimer)clearTimeout(liveTimer);
+  if(wxTimer)clearTimeout(wxTimer);
+  // Reset weather strip to loading state for new site
+  document.getElementById('wx-strip').classList.add('wx-empty');
+  document.getElementById('wx-desc').textContent='Loading weather…';
   // Destroy charts so they rebuild fresh for new site
   Object.values(charts).forEach(c=>c.destroy());charts={};
   refresh();
+  refreshWeather();
   if(currentView==='adv')loadCharts();
 }
 
@@ -1237,7 +1386,48 @@ def get_chart(chart: str, site: str) -> dict:
     return {'error': f'Unknown chart: {chart}'}
 
 
-# ── HTTP SERVER ───────────────────────────────────────────────────────────────
+def get_weather(site: str) -> dict:
+    """
+    Return the most recent weather reading for a site, plus emoji/description
+    derived from the WMO weather code.
+    """
+    # WMO code → (emoji, description) — kept in sync with weather_worker.py
+    WMO = {
+        0:  ("☀️",  "Clear sky"),      1:  ("🌤️", "Mainly clear"),
+        2:  ("⛅",  "Partly cloudy"),   3:  ("☁️",  "Overcast"),
+        45: ("🌫️", "Foggy"),           48: ("🌫️", "Icy fog"),
+        51: ("🌦️", "Light drizzle"),   53: ("🌦️", "Moderate drizzle"),
+        55: ("🌧️", "Dense drizzle"),   61: ("🌧️", "Slight rain"),
+        63: ("🌧️", "Moderate rain"),   65: ("🌧️", "Heavy rain"),
+        71: ("🌨️", "Slight snow"),     73: ("🌨️", "Moderate snow"),
+        75: ("❄️",  "Heavy snow"),      80: ("🌦️", "Slight showers"),
+        81: ("🌧️", "Moderate showers"),82: ("⛈️",  "Violent showers"),
+        95: ("⛈️",  "Thunderstorm"),    96: ("⛈️",  "T-storm w/ hail"),
+        99: ("⛈️",  "T-storm heavy hail"),
+    }
+
+    row = query_one("""
+        SELECT
+            temp_c, feels_like_c, cloud_cover, precipitation,
+            wind_speed, wind_direction, humidity,
+            weather_code, uv_index, sunrise, sunset,
+            solar_rad, is_day, time AS last_updated
+        FROM weather_readings
+        WHERE site_name ILIKE %s
+        ORDER BY time DESC
+        LIMIT 1
+    """, (site,))
+
+    if not row:
+        return {'error': 'No weather data yet', 'site': site}
+
+    code = row.get('weather_code')
+    emoji, desc = WMO.get(code, ("🌡️", f"Code {code}"))
+    row['emoji']       = emoji
+    row['description'] = desc
+    return row
+
+
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -1279,6 +1469,16 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({'error': 'No sites'}, 400)
                     return
                 self.send_json(get_flow(site))
+
+            elif parsed.path == '/api/weather':
+                site = qs.get('site', [None])[0]
+                if not site:
+                    sites = get_sites()
+                    site = sites[0]['name'] if sites else None
+                if not site:
+                    self.send_json({'error': 'No sites'}, 400)
+                    return
+                self.send_json(get_weather(site))
 
             elif parsed.path.startswith('/api/chart/'):
                 site = qs.get('site', [None])[0] or ''

@@ -32,7 +32,7 @@
       },
       "id": 100,
       "panels": [],
-      "title": "⚡ LIVE STATUS",
+      "title": "\u26a1 LIVE STATUS",
       "type": "row"
     },
     {
@@ -116,7 +116,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Current battery terminal voltage. Indicates charge level — fully charged is typically 54–55V for a 48V LiFePO4 bank.",
+      "description": "Current battery terminal voltage. Indicates charge level \u2014 fully charged is typically 54\u201355V for a 48V LiFePO4 bank.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -335,7 +335,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40–75°C.",
+      "description": "Internal temperature of the first inverter's power stage. Normal operating range is 40\u201375\u00b0C.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -485,7 +485,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate — switchable via the Cost Calc Mode dropdown.",
+      "description": "Estimated cost of grid electricity imported today. Calculated using City of Tshwane IBT tariff (incl 15% VAT) or flat rate \u2014 switchable via the Cost Calc Mode dropdown.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -563,7 +563,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 − grid_import ÷ total_load) × 100.",
+      "description": "Percentage of today's total load that was met by solar and battery without grid power. 100% = fully off-grid today. Formula: (1 \u2212 grid_import \u00f7 total_load) \u00d7 100.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -639,7 +639,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Battery pack temperature reported by the BMS. High temperatures (>45°C) may indicate heavy charge/discharge cycles.",
+      "description": "Battery pack temperature reported by the BMS. High temperatures (>45\u00b0C) may indicate heavy charge/discharge cycles.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -793,7 +793,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220–240V.",
+      "description": "Grid supply voltage as measured by Inverter 1. Normal range for SA is 220\u2013240V.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1020,7 +1020,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Estimated savings from solar generation today — the cost you avoided by not importing this energy from the grid.",
+      "description": "Estimated savings from solar generation today \u2014 the cost you avoided by not importing this energy from the grid.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1099,7 +1099,7 @@
       },
       "id": 101,
       "panels": [],
-      "title": "📈 POWER TRENDS",
+      "title": "\ud83d\udcc8 POWER TRENDS",
       "type": "row"
     },
     {
@@ -1355,7 +1355,7 @@
           "refId": "B"
         }
       ],
-      "title": "Solar PV Power — Per Inverter & Combined",
+      "title": "Solar PV Power \u2014 Per Inverter & Combined",
       "type": "timeseries"
     },
     {
@@ -1747,7 +1747,7 @@
           "refId": "B"
         }
       ],
-      "title": "Load Power — Per Inverter & Combined",
+      "title": "Load Power \u2014 Per Inverter & Combined",
       "type": "timeseries"
     },
     {
@@ -2012,7 +2012,7 @@
           "refId": "A"
         }
       ],
-      "title": "Grid Frequency — Eskom Quality",
+      "title": "Grid Frequency \u2014 Eskom Quality",
       "type": "timeseries"
     },
     {
@@ -2154,11 +2154,225 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(CASE WHEN inverter_temp < 100 THEN inverter_temp END) as \"Inverter Temp (°C)\",\n  AVG(CASE WHEN dc_temp < 100 THEN dc_temp END)             as \"DC Temp (°C)\",\n  AVG(CASE WHEN battery_temp IS NOT NULL AND battery_temp > 0 THEN battery_temp END) as \"Battery Temp (°C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name,\n  AVG(CASE WHEN inverter_temp < 100 THEN inverter_temp END) as \"Inverter Temp (\u00b0C)\",\n  AVG(CASE WHEN dc_temp < 100 THEN dc_temp END)             as \"DC Temp (\u00b0C)\",\n  AVG(CASE WHEN battery_temp IS NOT NULL AND battery_temp > 0 THEN battery_temp END) as \"Battery Temp (\u00b0C)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Inverter Temperatures",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Combined PV power output (left axis) vs cloud cover % and solar radiation W/m\u00b2 (right axis). Shows the direct relationship between cloud cover and solar generation. Weather updates every 15 min.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Combined PV (W)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#f5a623"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 15
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cloud Cover (%)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8090b8"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 8
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Rad (W/m\u00b2)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "wm2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    6,
+                    3
+                  ],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 515,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  minute AS time,\n  SUM(avg_pv) AS \"Combined PV (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) AS minute,\n    inverter_name,\n    AVG(pv1_power + COALESCE(pv2_power, 0)) AS avg_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) inv\nGROUP BY minute ORDER BY minute",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, cloud_cover AS \"Cloud Cover (%)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, solar_rad AS \"Solar Rad (W/m\u00b2)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "C"
+        }
+      ],
+      "title": "\u2601\ufe0f Cloud Cover & Solar Radiation vs Combined PV Power",
       "type": "timeseries"
     },
     {
@@ -2167,11 +2381,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 41
       },
       "id": 400,
       "panels": [],
-      "title": "🔋 BATTERY DETAIL",
+      "title": "\ud83d\udd0b BATTERY DETAIL",
       "type": "row"
     },
     {
@@ -2292,7 +2506,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 42
       },
       "id": 313,
       "options": {
@@ -2320,7 +2534,7 @@
           "refId": "A"
         }
       ],
-      "title": "Battery Amps & Voltage — Inverter 1",
+      "title": "Battery Amps & Voltage \u2014 Inverter 1",
       "type": "timeseries"
     },
     {
@@ -2441,7 +2655,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 42
       },
       "id": 314,
       "options": {
@@ -2469,7 +2683,7 @@
           "refId": "A"
         }
       ],
-      "title": "Battery Amps & Voltage — Inverter 2",
+      "title": "Battery Amps & Voltage \u2014 Inverter 2",
       "type": "timeseries"
     },
     {
@@ -2478,11 +2692,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 50
       },
       "id": 102,
       "panels": [],
-      "title": "💰 ENERGY COSTS & SAVINGS",
+      "title": "\ud83d\udcb0 ENERGY COSTS & SAVINGS",
       "type": "row"
     },
     {
@@ -2548,7 +2762,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 51
       },
       "id": 60,
       "options": {
@@ -2586,7 +2800,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Grid Cost — Last 14 Days",
+      "title": "Daily Grid Cost \u2014 Last 14 Days",
       "type": "barchart"
     },
     {
@@ -2594,7 +2808,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Daily solar savings for the last 14 days — the cost of electricity you generated yourself instead of buying from the grid.",
+      "description": "Daily solar savings for the last 14 days \u2014 the cost of electricity you generated yourself instead of buying from the grid.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2648,7 +2862,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 51
       },
       "id": 61,
       "options": {
@@ -2686,7 +2900,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Solar Savings — Last 14 Days",
+      "title": "Daily Solar Savings \u2014 Last 14 Days",
       "type": "barchart"
     },
     {
@@ -2775,7 +2989,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 59
       },
       "id": 62,
       "options": {
@@ -2813,7 +3027,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Grid Cost vs Solar Savings — Last 30 Days",
+      "title": "Daily Grid Cost vs Solar Savings \u2014 Last 30 Days",
       "type": "barchart"
     },
     {
@@ -2822,11 +3036,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 67
       },
       "id": 103,
       "panels": [],
-      "title": "📊 DAILY ENERGY SUMMARY",
+      "title": "\ud83d\udcca DAILY ENERGY SUMMARY",
       "type": "row"
     },
     {
@@ -2976,7 +3190,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 68
       },
       "id": 312,
       "options": {
@@ -3014,7 +3228,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Energy — Combined Site (Last 14 Days)",
+      "title": "Daily Energy \u2014 Combined Site (Last 14 Days)",
       "type": "barchart"
     },
     {
@@ -3168,7 +3382,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 67
+        "y": 76
       },
       "id": 30,
       "options": {
@@ -3206,7 +3420,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Energy — Inverter 1 (Last 14 Days)",
+      "title": "Daily Energy \u2014 Inverter 1 (Last 14 Days)",
       "type": "barchart"
     },
     {
@@ -3360,7 +3574,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 67
+        "y": 76
       },
       "id": 31,
       "options": {
@@ -3398,7 +3612,7 @@
           "refId": "A"
         }
       ],
-      "title": "Daily Energy — Inverter 2 (Last 14 Days)",
+      "title": "Daily Energy \u2014 Inverter 2 (Last 14 Days)",
       "type": "barchart"
     },
     {
@@ -3407,11 +3621,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 84
       },
       "id": 200,
       "panels": [],
-      "title": "🔎 PERFORMANCE & DIAGNOSTICS",
+      "title": "\ud83d\udd0e PERFORMANCE & DIAGNOSTICS",
       "type": "row"
     },
     {
@@ -3452,7 +3666,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 76
+        "y": 85
       },
       "id": 201,
       "options": {
@@ -3529,7 +3743,7 @@
         "h": 3,
         "w": 4,
         "x": 4,
-        "y": 76
+        "y": 85
       },
       "id": 202,
       "options": {
@@ -3602,7 +3816,7 @@
         "h": 3,
         "w": 4,
         "x": 8,
-        "y": 76
+        "y": 85
       },
       "id": 203,
       "options": {
@@ -3675,7 +3889,7 @@
         "h": 3,
         "w": 3,
         "x": 12,
-        "y": 76
+        "y": 85
       },
       "id": 204,
       "options": {
@@ -3707,7 +3921,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month — PV Generated",
+      "title": "This Month \u2014 PV Generated",
       "type": "stat"
     },
     {
@@ -3752,7 +3966,7 @@
         "h": 3,
         "w": 3,
         "x": 15,
-        "y": 76
+        "y": 85
       },
       "id": 205,
       "options": {
@@ -3784,7 +3998,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month — Grid Cost",
+      "title": "This Month \u2014 Grid Cost",
       "type": "stat"
     },
     {
@@ -3792,7 +4006,7 @@
         "type": "postgres",
         "uid": "solarwatch_pg"
       },
-      "description": "Total solar savings this calendar month — electricity cost avoided through solar generation.",
+      "description": "Estimated value of all PV energy generated this month at current rate. Note: this is the gross value of PV generated, not net savings (which deducts grid cost).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3825,7 +4039,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 76
+        "y": 85
       },
       "id": 206,
       "options": {
@@ -3857,7 +4071,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month — Solar Savings",
+      "title": "This Month \u2014 PV Value (R)",
       "type": "stat"
     },
     {
@@ -3927,7 +4141,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 79
+        "y": 88
       },
       "id": 211,
       "options": {
@@ -3955,7 +4169,7 @@
           "refId": "A"
         }
       ],
-      "title": "Grid Power — Per Inverter",
+      "title": "Grid Power \u2014 Per Inverter",
       "type": "timeseries"
     },
     {
@@ -4051,7 +4265,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 79
+        "y": 88
       },
       "id": 212,
       "options": {
@@ -4098,11 +4312,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 87
+        "y": 96
       },
       "id": 300,
       "panels": [],
-      "title": "☀️ SOLAR STRINGS — Per MPPT Detail",
+      "title": "\u2600\ufe0f SOLAR STRINGS \u2014 Per MPPT Detail",
       "type": "row"
     },
     {
@@ -4143,7 +4357,7 @@
         "h": 3,
         "w": 3,
         "x": 0,
-        "y": 88
+        "y": 97
       },
       "id": 301,
       "options": {
@@ -4175,7 +4389,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 — PV1 Voltage",
+      "title": "Inv 1 \u2014 PV1 Voltage",
       "type": "stat"
     },
     {
@@ -4216,7 +4430,7 @@
         "h": 3,
         "w": 3,
         "x": 3,
-        "y": 88
+        "y": 97
       },
       "id": 302,
       "options": {
@@ -4248,7 +4462,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 — PV1 Current",
+      "title": "Inv 1 \u2014 PV1 Current",
       "type": "stat"
     },
     {
@@ -4289,7 +4503,7 @@
         "h": 3,
         "w": 3,
         "x": 6,
-        "y": 88
+        "y": 97
       },
       "id": 303,
       "options": {
@@ -4321,7 +4535,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 — PV1 Power",
+      "title": "Inv 1 \u2014 PV1 Power",
       "type": "stat"
     },
     {
@@ -4362,7 +4576,7 @@
         "h": 3,
         "w": 3,
         "x": 9,
-        "y": 88
+        "y": 97
       },
       "id": 54,
       "options": {
@@ -4394,7 +4608,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 — PV2 Voltage",
+      "title": "Inv 1 \u2014 PV2 Voltage",
       "type": "stat"
     },
     {
@@ -4435,7 +4649,7 @@
         "h": 3,
         "w": 3,
         "x": 12,
-        "y": 88
+        "y": 97
       },
       "id": 55,
       "options": {
@@ -4467,7 +4681,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 — PV2 Current",
+      "title": "Inv 1 \u2014 PV2 Current",
       "type": "stat"
     },
     {
@@ -4508,7 +4722,7 @@
         "h": 3,
         "w": 3,
         "x": 15,
-        "y": 88
+        "y": 97
       },
       "id": 56,
       "options": {
@@ -4540,7 +4754,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 1 — PV2 Power",
+      "title": "Inv 1 \u2014 PV2 Power",
       "type": "stat"
     },
     {
@@ -4581,7 +4795,7 @@
         "h": 3,
         "w": 3,
         "x": 0,
-        "y": 91
+        "y": 100
       },
       "id": 304,
       "options": {
@@ -4613,7 +4827,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 — PV1 Voltage",
+      "title": "Inv 2 \u2014 PV1 Voltage",
       "type": "stat"
     },
     {
@@ -4654,7 +4868,7 @@
         "h": 3,
         "w": 3,
         "x": 3,
-        "y": 91
+        "y": 100
       },
       "id": 305,
       "options": {
@@ -4686,7 +4900,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 — PV1 Current",
+      "title": "Inv 2 \u2014 PV1 Current",
       "type": "stat"
     },
     {
@@ -4727,7 +4941,7 @@
         "h": 3,
         "w": 3,
         "x": 6,
-        "y": 91
+        "y": 100
       },
       "id": 306,
       "options": {
@@ -4759,7 +4973,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 — PV1 Power",
+      "title": "Inv 2 \u2014 PV1 Power",
       "type": "stat"
     },
     {
@@ -4800,7 +5014,7 @@
         "h": 3,
         "w": 3,
         "x": 9,
-        "y": 91
+        "y": 100
       },
       "id": 307,
       "options": {
@@ -4832,7 +5046,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 — PV2 Voltage",
+      "title": "Inv 2 \u2014 PV2 Voltage",
       "type": "stat"
     },
     {
@@ -4873,7 +5087,7 @@
         "h": 3,
         "w": 3,
         "x": 12,
-        "y": 91
+        "y": 100
       },
       "id": 308,
       "options": {
@@ -4905,7 +5119,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 — PV2 Current",
+      "title": "Inv 2 \u2014 PV2 Current",
       "type": "stat"
     },
     {
@@ -4946,7 +5160,7 @@
         "h": 3,
         "w": 3,
         "x": 15,
-        "y": 91
+        "y": 100
       },
       "id": 309,
       "options": {
@@ -4978,7 +5192,7 @@
           "refId": "A"
         }
       ],
-      "title": "Inv 2 — PV2 Power",
+      "title": "Inv 2 \u2014 PV2 Power",
       "type": "stat"
     },
     {
@@ -5083,7 +5297,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 94
+        "y": 103
       },
       "id": 310,
       "options": {
@@ -5107,11 +5321,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 1' as \"String\",\n  AVG(NULLIF(pv1_voltage, 0)) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 2' as \"String\",\n  AVG(CASE WHEN pv2_voltage > 10 THEN pv2_voltage END) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_voltage > 10\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 1' as \"String\",\n  AVG(NULLIF(pv1_voltage, 0)) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 2' as \"String\",\n  AVG(CASE WHEN pv2_voltage > 10 THEN pv2_voltage END) as \"Voltage (V)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_voltage > 10\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "PV String Voltages — All Active Strings",
+      "title": "PV String Voltages \u2014 All Active Strings",
       "type": "timeseries"
     },
     {
@@ -5216,7 +5430,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 94
+        "y": 103
       },
       "id": 311,
       "options": {
@@ -5240,11 +5454,11 @@
             "uid": "solarwatch_pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 1' as \"String\",\n  AVG(NULLIF(pv1_power, 0)) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' — String 2' as \"String\",\n  AVG(CASE WHEN pv2_power > 0 THEN pv2_power END) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_power > 0\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 1' as \"String\",\n  AVG(NULLIF(pv1_power, 0)) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nGROUP BY 1, 2\nUNION ALL\nSELECT\n  DATE_TRUNC('minute', time) AS time,\n  inverter_name || ' \u2014 String 2' as \"String\",\n  AVG(CASE WHEN pv2_power > 0 THEN pv2_power END) as \"Power (W)\"\nFROM solar_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND pv2_power > 0\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "PV String Power — All Active Strings",
+      "title": "PV String Power \u2014 All Active Strings",
       "type": "timeseries"
     },
     {
@@ -5253,11 +5467,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 102
+        "y": 111
       },
       "id": 104,
       "panels": [],
-      "title": "🔍 RAW DATA",
+      "title": "\ud83d\udd0d RAW DATA",
       "type": "row"
     },
     {
@@ -5512,7 +5726,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 103
+        "y": 112
       },
       "id": 40,
       "options": {
@@ -5539,6 +5753,959 @@
       ],
       "title": "Latest Readings",
       "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 121
+      },
+      "id": 500,
+      "panels": [],
+      "title": "\u2601\ufe0f WEATHER \u2014 Per Site",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Most recent weather conditions at each site. Cloud cover drives solar generation.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "orange",
+                "value": 25
+              },
+              {
+                "color": "red",
+                "value": 35
+              }
+            ]
+          },
+          "unit": "celsius",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 0,
+        "y": 122
+      },
+      "id": 501,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT site_name AS \"Site\", temp_c AS \"Temp\"\nFROM weather_readings\nWHERE time = (SELECT MAX(time) FROM weather_readings w2 WHERE w2.site_name = weather_readings.site_name)\nAND site_name ILIKE ${site:singlequote}\nORDER BY site_name",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83c\udf21\ufe0f Air Temperature",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Cloud cover %. Higher cloud = lower PV output. Explains solar underperformance.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "orange",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 0,
+          "max": 100,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 6,
+        "y": 122
+      },
+      "id": 502,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT site_name AS \"Site\", cloud_cover AS \"Cloud Cover\"\nFROM weather_readings\nWHERE time = (SELECT MAX(time) FROM weather_readings w2 WHERE w2.site_name = weather_readings.site_name)\nAND site_name ILIKE ${site:singlequote}\nORDER BY site_name",
+          "refId": "A"
+        }
+      ],
+      "title": "\u2601\ufe0f Cloud Cover",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Shortwave solar radiation W/m\u00b2. Direct proxy for expected PV output. 0 = no sun.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "orange",
+                "value": 400
+              },
+              {
+                "color": "green",
+                "value": 700
+              }
+            ]
+          },
+          "unit": "wm2",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 12,
+        "y": 122
+      },
+      "id": 503,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT site_name AS \"Site\", solar_rad AS \"Solar Radiation (W/m\u00b2)\"\nFROM weather_readings\nWHERE time = (SELECT MAX(time) FROM weather_readings w2 WHERE w2.site_name = weather_readings.site_name)\nAND site_name ILIKE ${site:singlequote}\nORDER BY site_name",
+          "refId": "A"
+        }
+      ],
+      "title": "\u2600\ufe0f Solar Radiation",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Wind speed, humidity and UV index at the site.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "velocitykmh",
+          "decimals": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Humidity"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 70
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "UV Index"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 3
+                    },
+                    {
+                      "color": "orange",
+                      "value": 6
+                    },
+                    {
+                      "color": "red",
+                      "value": 8
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 18,
+        "y": 122
+      },
+      "id": 504,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT wind_speed AS \"Wind (km/h)\", humidity AS \"Humidity\", uv_index AS \"UV Index\"\nFROM weather_readings\nWHERE site_name ILIKE ${site:singlequote}\nORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83d\udca8 Wind \u00b7 Humidity \u00b7 UV",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Cloud cover % (right axis) overlaid with combined PV power (left axis). Shows the direct relationship between cloud cover and solar generation.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cloud Cover (%)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8090b8"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 15
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Radiation (W/m\u00b2)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "wm2"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#f5a623"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    6,
+                    3
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 125
+      },
+      "id": 505,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT minute AS time, SUM(avg_pv) AS \"PV Power (W)\"\nFROM (\n  SELECT DATE_TRUNC('minute', time) AS minute,\n    inverter_name,\n    AVG(pv1_power + COALESCE(pv2_power, 0)) AS avg_pv\n  FROM solar_readings\n  WHERE $__timeFilter(time)\n  AND site_name ILIKE ${site:singlequote}\n  GROUP BY 1, 2\n) inv\nGROUP BY minute ORDER BY minute",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  time,\n  cloud_cover AS \"Cloud Cover (%)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  time,\n  solar_rad AS \"Solar Radiation (W/m\u00b2)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "C"
+        }
+      ],
+      "title": "\u2601\ufe0f Cloud Cover & Solar Radiation vs PV Power",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Ambient air temperature and humidity history. High ambient temps can affect inverter and battery performance.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Humidity (%)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4fc3f7"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 125
+      },
+      "id": 506,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  time,\n  temp_c AS \"Ambient Temp (\u00b0C)\",\n  feels_like_c AS \"Feels Like (\u00b0C)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  time,\n  humidity AS \"Humidity (%)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "B"
+        }
+      ],
+      "title": "\ud83c\udf21\ufe0f Ambient Temperature & Humidity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Wind speed and UV index over time. UV index correlates with solar irradiance quality.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "velocitykmh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "UV Index"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#f5a623"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 133
+      },
+      "id": 507,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  time,\n  wind_speed AS \"Wind Speed (km/h)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  time,\n  uv_index AS \"UV Index\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nORDER BY time",
+          "refId": "B"
+        }
+      ],
+      "title": "\ud83d\udca8 Wind Speed & UV Index",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Rainfall mm per reading interval. Rain generally improves panel efficiency (cleaning) but indicates overcast conditions.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 0,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "lengthmm"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 133
+      },
+      "id": 508,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  time,\n  precipitation AS \"Precipitation (mm)\"\nFROM weather_readings\nWHERE $__timeFilter(time)\nAND site_name ILIKE ${site:singlequote}\nAND precipitation > 0\nORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83c\udf27\ufe0f Precipitation",
+      "type": "timeseries"
     }
   ],
   "preload": false,
@@ -5671,7 +6838,7 @@
     ]
   },
   "timezone": "Africa/Johannesburg",
-  "title": "SolarWatch — Solar Monitoring",
+  "title": "SolarWatch \u2014 Solar Monitoring",
   "uid": "solarwatch-v1",
   "version": 4
 }
