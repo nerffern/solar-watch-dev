@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS sites (
     source_type         TEXT        NOT NULL CHECK (source_type IN ('deye', 'sunsynk')),
     enabled             BOOLEAN     NOT NULL DEFAULT TRUE,
     location            TEXT,
+    latitude            NUMERIC(9,6),          -- decimal degrees, e.g. -24.052200
+    longitude           NUMERIC(9,6),          -- decimal degrees, e.g.  31.263700
     -- Deye: array of inverter connection details
     inverters           JSONB,
     -- Sunsynk: cloud credentials
@@ -92,23 +94,50 @@ CREATE TABLE IF NOT EXISTS solar_readings (
 
 GRANT ALL ON TABLE solar_readings TO solarwatch_user;
 
--- ── 6. Indexes ────────────────────────────────────────────────────────────────
+-- ── 6. Weather readings table ─────────────────────────────────────────────────
+-- Populated by weather_worker.py via Open-Meteo (free, no API key).
+-- Polled every WEATHER_INTERVAL seconds (default 900 = 15 min).
+CREATE TABLE IF NOT EXISTS weather_readings (
+    time             TIMESTAMPTZ  NOT NULL,
+    site_name        TEXT         NOT NULL,
+    temp_c           NUMERIC(5,1),          -- air temperature °C
+    feels_like_c     NUMERIC(5,1),          -- apparent temperature °C
+    cloud_cover      INTEGER,               -- 0–100 %
+    precipitation    NUMERIC(6,2),          -- mm in last hour
+    wind_speed       NUMERIC(6,1),          -- km/h at 10m
+    wind_direction   INTEGER,               -- degrees 0–360
+    humidity         INTEGER,               -- relative humidity %
+    weather_code     INTEGER,               -- WMO weather interpretation code
+    uv_index         NUMERIC(4,1),          -- UV index (0–11+)
+    sunrise          TIMESTAMPTZ,           -- local sunrise time (daily)
+    sunset           TIMESTAMPTZ,           -- local sunset time (daily)
+    solar_rad        NUMERIC(8,2),          -- shortwave radiation W/m² (instant)
+    is_day           BOOLEAN                -- true during daylight hours
+);
+
+GRANT ALL ON TABLE weather_readings TO solarwatch_user;
+
+-- ── 7. Indexes ────────────────────────────────────────────────────────────────
 CREATE INDEX idx_sw_site_inv_time  ON solar_readings (site_name, inverter_name, time DESC);
 CREATE INDEX idx_sw_time           ON solar_readings (time DESC);
 CREATE INDEX idx_sw_source_type    ON solar_readings (source_type, time DESC);
+CREATE INDEX idx_wx_site_time      ON weather_readings (site_name, time DESC);
 
--- ── 7. Seed sites ─────────────────────────────────────────────────────────────
+-- ── 8. Seed sites ─────────────────────────────────────────────────────────────
 
-INSERT INTO sites (site_name, display_name, source_type, location, inverters)
+INSERT INTO sites (site_name, display_name, source_type, location, latitude, longitude, inverters)
 VALUES (
     'Selati', 'HFI Selati', 'deye', 'Selati, Limpopo, ZA',
+    -24.052200, 31.263700,
     '[
         {"name":"Inverter_1","ip":"192.168.10.3","dongle_serial":2705000422,"inverter_sn":"2208262350"},
         {"name":"Inverter_2","ip":"192.168.10.2","dongle_serial":2776470283,"inverter_sn":"2303020166"}
     ]'::jsonb
 ) ON CONFLICT (site_name) DO NOTHING;
 
--- Lanner — Inverter_1 SN to be confirmed, update with:
+-- Lanner — update coordinates once confirmed:
+--   UPDATE sites SET latitude = -XX.XXXX, longitude = XX.XXXX WHERE site_name = 'Lanner';
+-- Inverter_1 SN also pending confirmation:
 --   UPDATE sites SET inverters = jsonb_set(inverters, '{0,inverter_sn}', '"ACTUAL_SN"')
 --   WHERE site_name = 'Lanner';
 INSERT INTO sites (site_name, display_name, source_type, location, inverters)
@@ -120,5 +149,6 @@ VALUES (
     ]'::jsonb
 ) ON CONFLICT (site_name) DO NOTHING;
 
--- ── 8. Verify ─────────────────────────────────────────────────────────────────
-SELECT site_name, display_name, source_type, enabled, location FROM sites ORDER BY site_name;
+-- ── 9. Verify ─────────────────────────────────────────────────────────────────
+SELECT site_name, display_name, source_type, enabled, location, latitude, longitude
+FROM sites ORDER BY site_name;
