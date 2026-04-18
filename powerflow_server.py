@@ -150,7 +150,12 @@ def get_flow(site: str) -> dict:
         """
         daily_row = query_one(f"""
             SELECT
-              MIN(load_val)  as load_kwh,
+              -- Use load from the inverter that reports grid (the grid-connected one)
+              -- Falls back to MAX load if no inverter has grid data
+              COALESCE(
+                MAX(load_val) FILTER (WHERE grid_val > 0),
+                MAX(load_val)
+              ) as load_kwh,
               MAX(grid_val)  as grid_kwh,
               SUM(pv_val)    as pv_kwh
             FROM (
@@ -163,18 +168,18 @@ def get_flow(site: str) -> dict:
               WHERE site_name ILIKE %s
               AND {TODAY}
               AND daily_load_energy > 0
-              AND daily_load_energy < 100
+              AND daily_load_energy < 200
               ORDER BY inverter_name, time DESC
             ) sub
         """, (site,))
         load = float(daily_row.get('load_kwh') or 1)
-        grid = float(daily_row.get('grid_kwh') or 0)
+        grid = float(daily_row.get('grid_kwh') if daily_row.get('grid_kwh') is not None else 0)
         pv   = float(daily_row.get('pv_kwh')   or 0)
         d['self_suff']       = max(0, min(100, round((1 - grid / max(load, 0.001)) * 100)))
         d['daily_load_kwh']  = round(load, 1)
         d['daily_grid_kwh']  = round(grid, 1)
         d['daily_pv_kwh']    = round(pv,   1)
-        d['solar_savings_r'] = round((load - grid) * RATE, 2)
+        d['solar_savings_r'] = round(max(0, (load - grid) * RATE), 2)
     except Exception as e:
         d['self_suff'] = 0
         log.warning(f"Daily counters error: {e}")
@@ -472,10 +477,11 @@ footer{
     text-align:left;padding:0;
   }
 
-  /* Flow area: takes remaining space, fixed min height so nodes aren't squashed */
+  /* Flow area: constrained on mobile to prevent excessive vertical stretching */
   .flow-area{
     flex:1;
-    min-height:300px;
+    min-height:280px;
+    max-height:min(60vw,380px);
     width:100%;
   }
 
@@ -663,7 +669,7 @@ footer{
       </span>
     </div>
     <div class="wx-pill">
-      <span class="wx-pill-lbl">Rain</span>
+      <span class="wx-pill-lbl">Rain/hr</span>
       <span class="wx-pill-val" id="wx-rain">—</span>
     </div>
     <div class="wx-pill">
@@ -822,8 +828,7 @@ function onRateChange(){
 
 function updateFooterCosts(d){
   const load=d.daily_load_kwh||0, grid=d.daily_grid_kwh||0;
-  const savings=calcCost(load)-calcCost(grid);
-  const gridCost=calcCost(grid);
+  const savings=Math.max(0, calcCost(load)-calcCost(grid));
   document.getElementById('f-sv').textContent='R'+savings.toFixed(2);
   document.getElementById('a-savings').textContent='R'+savings.toFixed(2);
 }
@@ -865,6 +870,20 @@ function spd(w){const a=Math.abs(w);if(a<15)return 'idle';if(a<600)return 'slow'
 function fdir(w,inv=false){if(Math.abs(w)<15)return 'idle';return(inv?w<0:w>0)?'fwd':'rev'}
 function sc(s){return s>60?'var(--green)':s>25?'var(--amber)':'var(--red)'}
 function status(d){
+  const hr=new Date().toLocaleString('en-ZA',{hour:'numeric',hour12:false,timeZone:'Africa/Johannesburg'})*1;
+  const isNight=hr>=18||hr<6;
+  const isMorning=hr>=6&&hr<10;
+
+  if(isNight){
+    if(d.soc>70) return{cls:'sg',badge:'GOOD OVERNIGHT RESERVE',msg:'Sufficient charge for the night ✓'};
+    if(d.soc>40) return{cls:'sa',badge:'MODERATE RESERVE',msg:'Limit heavy appliances tonight'};
+    return{cls:'sr',badge:'LOW RESERVE',msg:'Avoid high loads — battery running low'};
+  }
+  if(isMorning&&d.solar_w<500){
+    if(d.soc>60) return{cls:'sg',badge:'GOOD',msg:'Solar charging — safe to use appliances'};
+    if(d.soc>30) return{cls:'sa',badge:'MODERATE',msg:'Wait for solar to ramp up'};
+    return{cls:'sr',badge:'CONSERVE POWER',msg:'Avoid heavy appliances'};
+  }
   if(d.soc>80||d.solar_w>3000) return{cls:'sg',badge:'PLENTY OF POWER',msg:'Safe to run heavy appliances ✓'};
   if(d.soc>40||d.solar_w>1000) return{cls:'sa',badge:'MODERATE',msg:'Light usage recommended'};
   return{cls:'sr',badge:'CONSERVE POWER',msg:'Avoid heavy appliances'};
@@ -1143,7 +1162,7 @@ function renderWeather(d){
   document.getElementById('wx-site').textContent   = currentSite;
   document.getElementById('wx-temp').textContent   = temp  != null ? temp.toFixed(1)  + '°C'    : '—';
   document.getElementById('wx-feels').textContent  = feels != null ? feels.toFixed(1) + '°C'    : '—';
-  document.getElementById('wx-rain').textContent   = rain  != null ? rain.toFixed(1)  + ' mm'   : '—';
+  document.getElementById('wx-rain').textContent   = rain  != null ? (rain===0?'0':rain.toFixed(1)) + ' mm/hr' : '—';
   document.getElementById('wx-wind').textContent   = wind  != null ? wind.toFixed(0)  + ' km/h' : '—';
   document.getElementById('wx-hum').textContent    = hum   != null ? hum + '%'                  : '—';
   document.getElementById('wx-uv').textContent     = uv    != null ? uv.toFixed(1)              : '—';
