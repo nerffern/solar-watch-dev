@@ -443,25 +443,26 @@ footer{
   /* Buttons a bit larger for touch */
   .vbtn{padding:7px 16px;font-size:12px}
 
-  /* ── BASIC VIEW — switch to column layout ── */
+  /* ── BASIC VIEW — column layout, fill viewport ── */
   #view-basic{
     flex-direction:column;
     height:auto;
-    min-height:calc(100svh - 120px);
+    min-height:0;
   }
 
-  /* SOC panel: horizontal strip across the top */
+  /* SOC panel: compact horizontal strip across the top */
   .soc-panel{
     width:100%;
     flex-direction:row;
     border-right:none;
     border-bottom:1px solid var(--border);
-    padding:10px 16px;
-    gap:14px;
+    padding:8px 14px;
+    gap:12px;
     justify-content:flex-start;
     align-items:center;
     flex-shrink:0;
     min-height:0;
+    max-height:90px;
   }
   /* Shrink the gauge on mobile */
   .gauge-wrap{
@@ -477,31 +478,32 @@ footer{
     text-align:left;padding:0;
   }
 
-  /* Flow area: constrained on mobile to prevent excessive vertical stretching */
+  /* Flow area: square-ish on mobile for balanced node layout */
   .flow-area{
-    flex:1;
-    min-height:280px;
-    max-height:min(60vw,380px);
     width:100%;
+    aspect-ratio:1.1/1;
+    min-height:260px;
+    max-height:420px;
+    flex-shrink:0;
   }
 
-  /* Node cards: smaller on mobile */
+  /* Node cards: sized for phone screens */
   .nc{
-    width:clamp(90px,22vw,130px);
+    width:clamp(95px,24vw,140px);
     padding:8px 10px;
     border-radius:10px;
     gap:3px;
   }
-  .n-ico{font-size:clamp(18px,5vw,30px)}
-  .n-val{font-size:clamp(14px,4.5vw,24px)}
+  .n-ico{font-size:clamp(20px,5.5vw,32px)}
+  .n-val{font-size:clamp(15px,5vw,26px)}
   .n-lbl{font-size:9px}
   .n-sub{font-size:9px}
 
-  /* Hub ring: smaller */
+  /* Hub ring: balanced size for phone */
   .hub-ring{
-    width:clamp(44px,11vw,64px);
-    height:clamp(44px,11vw,64px);
-    font-size:clamp(18px,5vw,30px);
+    width:clamp(48px,12vw,68px);
+    height:clamp(48px,12vw,68px);
+    font-size:clamp(20px,5.5vw,32px);
   }
   .hub-lbl{font-size:8px}
 
@@ -537,10 +539,11 @@ footer{
   .wx-strip{
     height:auto;
     flex-wrap:wrap;
-    padding:6px 12px;
-    gap:8px;
+    padding:5px 10px;
+    gap:6px;
   }
-  .wx-pills{flex-wrap:wrap;gap:8px}
+  .wx-pills{flex-wrap:wrap;gap:6px 10px}
+  .wx-pill{min-width:52px}
   .wx-right{display:none} /* hide sunrise/sunset on mobile — space is premium */
 
   /* ── ADVANCED VIEW ── */
