@@ -330,6 +330,9 @@ select{
 @keyframes df{to{stroke-dashoffset:-28}}
 @keyframes dr{to{stroke-dashoffset:28}}
 .fl{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:8 20}
+@media(max-width:768px),(orientation:portrait) and (max-width:1024px){
+  .fl{stroke-width:3.5;stroke-dasharray:10 16}
+}
 .fwd{animation:df 1s linear infinite}.rev{animation:dr 1s linear infinite}
 .idle{opacity:.1;animation:none}.slow{animation-duration:2s}.med{animation-duration:1.1s}.fast{animation-duration:.5s}
 
@@ -517,16 +520,16 @@ footer{
     justify-items:center;
     align-items:center;
   }
-  /* Show only first 4 most important stats */
-  footer .stat:nth-child(1){order:1}  /* Battery V */
-  footer .stat:nth-child(2){order:2}  /* Batt Temp */
-  footer .stat:nth-child(3){order:3}  /* Grid V */
-  footer .stat:nth-child(4){order:4}  /* Frequency */
-  footer .stat:nth-child(5){order:5}  /* Self-Suff */
-  footer .stat:nth-child(6){order:6}  /* PV Today */
-  footer .stat:nth-child(7){order:7}  /* Load Today */
-  footer .stat:nth-child(8){order:8}  /* Solar Savings */
-  /* Hide Grid Today and Clock in the tight footer */
+  /* Mobile footer order: actionable stats first */
+  footer .stat:nth-child(5){order:1}  /* Self-Suff — most actionable */
+  footer .stat:nth-child(6){order:2}  /* PV Today */
+  footer .stat:nth-child(7){order:3}  /* Load Today */
+  footer .stat:nth-child(8){order:4}  /* Solar Savings */
+  footer .stat:nth-child(1){order:5}  /* Battery V */
+  footer .stat:nth-child(2){order:6}  /* Batt Temp */
+  footer .stat:nth-child(3){order:7}  /* Grid V */
+  footer .stat:nth-child(4){order:8}  /* Frequency */
+  /* Hide Grid Today and Clock — space is premium */
   footer .stat:nth-child(9){display:none}
   footer #clock-wrap{display:none}
 
@@ -570,6 +573,8 @@ footer{
     padding:6px 4px;
     border-bottom:1px solid var(--border);
   }
+  .adv-order-1{order:1}.adv-order-2{order:2}.adv-order-3{order:3}
+  .adv-order-4{order:4}.adv-order-5{order:5}.adv-order-6{order:6}
   .adv-stat-lbl{font-size:8px}
   .adv-stat-val{font-size:clamp(14px,4vw,22px)}
 }
@@ -687,8 +692,8 @@ footer{
       <span class="wx-pill-lbl">UV</span>
       <span class="wx-pill-val" id="wx-uv">—</span>
     </div>
-    <div class="wx-pill">
-      <span class="wx-pill-lbl">Solar Rad</span>
+    <div class="wx-pill" id="wx-rad-pill">
+      <span class="wx-pill-lbl" id="wx-rad-lbl">Solar Rad</span>
       <span class="wx-pill-val" id="wx-rad">—</span>
     </div>
   </div>
@@ -751,12 +756,12 @@ footer{
   <div class="view" id="view-adv">
     <!-- Top stat pills -->
     <div class="adv-stats" id="adv-stats">
-      <div class="adv-stat"><span class="adv-stat-lbl">Peak Solar Today</span><span class="adv-stat-val" id="a-peak-pv" style="color:var(--solar)">—</span></div>
-      <div class="adv-stat"><span class="adv-stat-lbl">Peak Load Today</span><span class="adv-stat-val" id="a-peak-load" style="color:var(--amber)">—</span></div>
-      <div class="adv-stat"><span class="adv-stat-lbl">Battery SOC</span><span class="adv-stat-val" id="a-soc" style="color:var(--green)">—</span></div>
-      <div class="adv-stat"><span class="adv-stat-lbl">PV Today</span><span class="adv-stat-val" id="a-pv-today" style="color:var(--solar)">—</span></div>
-      <div class="adv-stat"><span class="adv-stat-lbl">Self-Suff</span><span class="adv-stat-val" id="a-ss">—</span></div>
-      <div class="adv-stat"><span class="adv-stat-lbl">Solar Savings</span><span class="adv-stat-val" id="a-savings" style="color:var(--green)">—</span></div>
+      <div class="adv-stat adv-order-1"><span class="adv-stat-lbl">Battery SOC</span><span class="adv-stat-val" id="a-soc" style="color:var(--green)">—</span></div>
+      <div class="adv-stat adv-order-2"><span class="adv-stat-lbl">Self-Suff</span><span class="adv-stat-val" id="a-ss">—</span></div>
+      <div class="adv-stat adv-order-3"><span class="adv-stat-lbl">PV Today</span><span class="adv-stat-val" id="a-pv-today" style="color:var(--solar)">—</span></div>
+      <div class="adv-stat adv-order-4"><span class="adv-stat-lbl">Solar Savings</span><span class="adv-stat-val" id="a-savings" style="color:var(--green)">—</span></div>
+      <div class="adv-stat adv-order-5"><span class="adv-stat-lbl">Peak Solar Today</span><span class="adv-stat-val" id="a-peak-pv" style="color:var(--solar)">—</span></div>
+      <div class="adv-stat adv-order-6"><span class="adv-stat-lbl">Peak Load Today</span><span class="adv-stat-val" id="a-peak-load" style="color:var(--amber)">—</span></div>
     </div>
     <!-- Chart grid -->
     <div class="adv-inner" id="adv-inner">
@@ -938,7 +943,18 @@ function render(d){
   // Status
   document.getElementById('sp').className='soc-panel '+st.cls;
   document.getElementById('sbadge').textContent=st.badge;
-  document.getElementById('smsg').textContent=st.msg;
+  // Append sunrise time to night message
+  let msg = st.msg;
+  if(window._wx && !window._wx.is_day && window._wx.sunrise){
+    const srMs = new Date(window._wx.sunrise).getTime();
+    const diffMs = srMs - Date.now();
+    if(diffMs > 0){
+      const hrs = Math.floor(diffMs/3600000);
+      const mins = Math.floor((diffMs%3600000)/60000);
+      msg += ' · ☀️ '+hrs+'h '+mins+'m';
+    }
+  }
+  document.getElementById('smsg').textContent=msg;
   document.getElementById('smsg').style.color=st.cls==='sg'?'var(--green)':st.cls==='sa'?'var(--amber)':'var(--red)';
 
   // Nodes
@@ -960,7 +976,7 @@ function render(d){
 
   // Footer
   document.getElementById('f-bv').textContent=d.batt_v.toFixed(1)+'V';
-  document.getElementById('f-bt').textContent=d.batt_temp.toFixed(1)+'°C';
+  document.getElementById('f-bt').textContent=d.batt_temp>5?d.batt_temp.toFixed(1)+'°C':'—';
   document.getElementById('f-gv').textContent=d.grid_v.toFixed(0)+'V';
   document.getElementById('f-hz').textContent=d.grid_hz.toFixed(2)+'Hz';
   const ss=d.self_suff??0;
@@ -985,10 +1001,13 @@ function render(d){
 }
 
 // ── CHART HELPERS ─────────────────────────────────────────────────────────────
-function mkOpts(){return {
+function mkOpts(){
+  const isMob=window.innerWidth<=768||( window.innerWidth<=1024&&window.innerHeight>window.innerWidth);
+  const lgnd={color:'#8e9bc0',font:{size:isMob?12:11,family:"'Barlow',sans-serif"},boxWidth:isMob?14:12,padding:isMob?12:10};
+  return {
   responsive:true,maintainAspectRatio:false,
   animation:{duration:400},
-  plugins:{legend:{labels:{color:'#8e9bc0',font:{size:11,family:"'Barlow',sans-serif"},boxWidth:12,padding:10}},tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(17,19,24,.95)',titleColor:'#e8eaf2',bodyColor:'#8e9bc0',borderColor:'#232736',borderWidth:1}},
+  plugins:{legend:{labels:lgnd},tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(17,19,24,.95)',titleColor:'#e8eaf2',bodyColor:'#8e9bc0',borderColor:'#232736',borderWidth:1}},
   scales:{
     x:{type:'time',time:{tooltipFormat:'HH:mm',displayFormats:{minute:'HH:mm',hour:'HH:mm'}},ticks:{color:'#4a5070',font:{size:10},maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'}},
     y:{ticks:{color:'#4a5070',font:{size:10},callback:v=>v.toLocaleString()},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'}}
@@ -1146,6 +1165,7 @@ async function refreshWeather(){
 }
 
 function renderWeather(d){
+  window._wx = d; // store for use in render() sunrise countdown
   const strip = document.getElementById('wx-strip');
   strip.classList.remove('wx-empty');
 
@@ -1169,7 +1189,29 @@ function renderWeather(d){
   document.getElementById('wx-wind').textContent   = wind  != null ? wind.toFixed(0)  + ' km/h' : '—';
   document.getElementById('wx-hum').textContent    = hum   != null ? hum + '%'                  : '—';
   document.getElementById('wx-uv').textContent     = uv    != null ? uv.toFixed(1)              : '—';
-  document.getElementById('wx-rad').textContent    = rad   != null ? Math.round(rad)  + ' W/m²' : '—';
+  // At night hide solar rad (always 0) and show sunrise countdown instead
+  const radPill = document.getElementById('wx-rad-pill');
+  if(radPill){
+    if(!d.is_day && d.sunrise){
+      const srMs = new Date(d.sunrise).getTime();
+      const nowMs = Date.now();
+      const diffMs = srMs - nowMs;
+      if(diffMs > 0){
+        const hrs = Math.floor(diffMs/3600000);
+        const mins = Math.floor((diffMs%3600000)/60000);
+        document.getElementById('wx-rad-lbl').textContent = 'SUNRISE IN';
+        document.getElementById('wx-rad').textContent = hrs+'h '+mins+'m';
+      } else {
+        document.getElementById('wx-rad-lbl').textContent = 'SOLAR RAD';
+        document.getElementById('wx-rad').textContent = rad != null ? Math.round(rad) + ' W/m²' : '—';
+      }
+    } else {
+      document.getElementById('wx-rad-lbl').textContent = 'SOLAR RAD';
+      document.getElementById('wx-rad').textContent = rad != null ? Math.round(rad) + ' W/m²' : '—';
+    }
+  } else {
+    document.getElementById('wx-rad').textContent = rad != null ? Math.round(rad) + ' W/m²' : '—';
+  }
 
   document.getElementById('wx-cloud-pct').textContent      = cloud + '%';
   document.getElementById('wx-cloud-bar').style.width      = cloud + '%';
