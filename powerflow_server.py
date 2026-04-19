@@ -13,6 +13,7 @@ Serves:
     GET /api/sites     → list of sites
     GET /api/flow      → live power data JSON
     GET /api/weather   → latest weather reading for a site
+    GET /api/monthly   → this month's PV and grid totals
     GET /api/chart/*   → chart data for the Advanced view
 """
 
@@ -185,6 +186,53 @@ def get_flow(site: str) -> dict:
         log.warning(f"Daily counters error: {e}")
 
     return d
+
+def get_monthly(site: str) -> dict:
+    """Return this month's PV kWh and grid kWh for the site."""
+    MONTH = """
+        DATE_TRUNC('month', time AT TIME ZONE 'Africa/Johannesburg')
+        = DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Johannesburg')
+    """
+    # Monthly PV — SUM of end-of-day readings per inverter per day
+    pv_row = query_one(f"""
+        SELECT COALESCE(SUM(eod_pv), 0) AS month_pv_kwh
+        FROM (
+          SELECT DISTINCT ON (DATE(time AT TIME ZONE 'Africa/Johannesburg'), inverter_name)
+            inverter_name,
+            daily_pv_energy AS eod_pv
+          FROM solar_readings
+          WHERE {MONTH}
+          AND site_name ILIKE %s
+          AND daily_pv_energy IS NOT NULL
+          AND daily_pv_energy > 0
+          ORDER BY DATE(time AT TIME ZONE 'Africa/Johannesburg'), inverter_name, time DESC
+        ) sub
+    """, (site,))
+
+    # Monthly grid — MAX per day from the grid-reporting inverter
+    grid_row = query_one(f"""
+        SELECT COALESCE(SUM(day_grid), 0) AS month_grid_kwh
+        FROM (
+          SELECT
+            DATE(time AT TIME ZONE 'Africa/Johannesburg') AS day,
+            MAX(daily_grid_import) FILTER (WHERE daily_grid_import > 0) AS day_grid
+          FROM solar_readings
+          WHERE {MONTH}
+          AND site_name ILIKE %s
+          AND daily_grid_import IS NOT NULL
+          AND daily_grid_import BETWEEN 0.01 AND 9000
+          GROUP BY 1
+        ) sub
+    """, (site,))
+
+    month_pv   = float(pv_row.get('month_pv_kwh')   or 0)
+    month_grid = float(grid_row.get('month_grid_kwh') or 0)
+
+    return {
+        'month_pv_kwh':   round(month_pv,   1),
+        'month_grid_kwh': round(month_grid,  1),
+    }
+
 
 # ── HTML ──────────────────────────────────────────────────────────────────────
 
@@ -373,6 +421,17 @@ select{
 .adv-stat-lbl{font-size:clamp(9px,.8vw,12px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
 .adv-stat-val{font-size:clamp(18px,2.5vw,40px);font-family:var(--mono);font-weight:700}
 
+/* Technical stats strip — compact row above the charts in advanced view */
+.tech-stats{
+  display:flex;align-items:center;justify-content:center;
+  gap:clamp(16px,3vw,48px);padding:6px 2.5vw;
+  background:var(--s2);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.tech-stat{display:flex;align-items:center;gap:8px}
+.tech-lbl{font-size:clamp(8px,.7vw,11px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.tech-val{font-size:clamp(12px,1.1vw,18px);font-family:var(--mono);font-weight:500;color:var(--text)}
+
 /* ── FOOTER ── */
 footer{
   display:flex;align-items:center;justify-content:center;
@@ -520,17 +579,16 @@ footer{
     justify-items:center;
     align-items:center;
   }
-  /* Mobile footer order: actionable stats first */
-  footer .stat:nth-child(5){order:1}  /* Self-Suff — most actionable */
-  footer .stat:nth-child(6){order:2}  /* PV Today */
-  footer .stat:nth-child(7){order:3}  /* Load Today */
-  footer .stat:nth-child(8){order:4}  /* Solar Savings */
-  footer .stat:nth-child(1){order:5}  /* Battery V */
-  footer .stat:nth-child(2){order:6}  /* Batt Temp */
-  footer .stat:nth-child(3){order:7}  /* Grid V */
-  footer .stat:nth-child(4){order:8}  /* Frequency */
-  /* Hide Grid Today and Clock — space is premium */
-  footer .stat:nth-child(9){display:none}
+  /* Mobile footer order — daily first, monthly second */
+  footer .stat:nth-child(1){order:1}  /* Self-Suff */
+  footer .stat:nth-child(2){order:2}  /* PV Today */
+  footer .stat:nth-child(3){order:3}  /* Load Today */
+  footer .stat:nth-child(4){order:4}  /* Solar Savings */
+  footer .stat:nth-child(5){order:5}  /* Grid Today */
+  footer .stat:nth-child(6){order:6}  /* Month PV */
+  footer .stat:nth-child(7){order:7}  /* Month PV Value */
+  footer .stat:nth-child(8){order:8}  /* Month Grid */
+  footer .stat:nth-child(9){order:9}  /* Month Grid Cost */
   footer #clock-wrap{display:none}
 
   .st-lbl{font-size:9px}
@@ -763,6 +821,13 @@ footer{
       <div class="adv-stat adv-order-5"><span class="adv-stat-lbl">Peak Solar Today</span><span class="adv-stat-val" id="a-peak-pv" style="color:var(--solar)">—</span></div>
       <div class="adv-stat adv-order-6"><span class="adv-stat-lbl">Peak Load Today</span><span class="adv-stat-val" id="a-peak-load" style="color:var(--amber)">—</span></div>
     </div>
+    <!-- Technical stats strip — shown in advanced view only -->
+    <div class="tech-stats" id="tech-stats">
+      <div class="tech-stat"><span class="tech-lbl">Battery V</span><span class="tech-val" id="a-bv">—</span></div>
+      <div class="tech-stat"><span class="tech-lbl">Batt Temp</span><span class="tech-val" id="a-bt">—</span></div>
+      <div class="tech-stat"><span class="tech-lbl">Grid V</span><span class="tech-val" id="a-gv">—</span></div>
+      <div class="tech-stat"><span class="tech-lbl">Frequency</span><span class="tech-val" id="a-hz">—</span></div>
+    </div>
     <!-- Chart grid -->
     <div class="adv-inner" id="adv-inner">
       <div class="chart-panel span2"><div class="chart-title">Solar PV Power — Per Inverter &amp; Combined</div><div class="chart-wrap"><canvas id="ch-pv"></canvas></div></div>
@@ -778,15 +843,15 @@ footer{
 
 <!-- FOOTER -->
 <footer>
-  <div class="stat"><span class="st-lbl">Battery V</span><span class="st-val" id="f-bv">—</span></div>
-  <div class="stat"><span class="st-lbl">Batt Temp</span><span class="st-val" id="f-bt">—</span></div>
-  <div class="stat"><span class="st-lbl">Grid V</span><span class="st-val" id="f-gv">—</span></div>
-  <div class="stat"><span class="st-lbl">Frequency</span><span class="st-val" id="f-hz">—</span></div>
   <div class="stat"><span class="st-lbl">Self-Suff</span><span class="st-val" id="f-ss">—</span></div>
   <div class="stat"><span class="st-lbl">PV Today</span><span class="st-val" id="f-pv" style="color:var(--solar)">—</span></div>
   <div class="stat"><span class="st-lbl">Load Today</span><span class="st-val" id="f-tl">—</span></div>
   <div class="stat"><span class="st-lbl">Solar Savings</span><span class="st-val" id="f-sv" style="color:var(--green)">—</span></div>
   <div class="stat"><span class="st-lbl">Grid Today</span><span class="st-val" id="f-tg">—</span></div>
+  <div class="stat"><span class="st-lbl">Month PV</span><span class="st-val" id="f-mpv" style="color:var(--solar)">—</span></div>
+  <div class="stat"><span class="st-lbl">Month PV Value</span><span class="st-val" id="f-mpvr" style="color:var(--green)">—</span></div>
+  <div class="stat"><span class="st-lbl">Month Grid</span><span class="st-val" id="f-mgrid">—</span></div>
+  <div class="stat"><span class="st-lbl">Month Grid Cost</span><span class="st-val" id="f-mgridr" style="color:var(--red)">—</span></div>
   <!-- Clock — click to toggle visibility, persists in localStorage -->
   <div class="stat" id="clock-wrap" onclick="toggleClock()" title="Click to toggle clock" style="cursor:pointer;margin-left:auto;padding-left:clamp(8px,2vw,32px);opacity:0.4;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=clockVisible?1:0.4">
     <span class="st-lbl">Time</span>
@@ -827,11 +892,13 @@ function setRateMode(mode){
   document.getElementById('flat-input-wrap').style.display=mode==='flat'?'flex':'none';
   document.getElementById('ibt-select').style.display=mode==='ibt'?'block':'none';
   if(window._ld) updateFooterCosts(window._ld);
+  if(window._monthly) renderMonthly(window._monthly);
 }
 
 function onRateChange(){
   flatRate=parseFloat(document.getElementById('flat-rate').value)||4.50;
   if(window._ld) updateFooterCosts(window._ld);
+  if(window._monthly) renderMonthly(window._monthly);
 }
 
 function updateFooterCosts(d){
@@ -974,11 +1041,12 @@ function render(d){
   document.getElementById('nd-load').style.borderColor=d.load_w>50?'rgba(79,195,247,.35)':'';
   document.getElementById('hring').className='hub-ring'+(d.solar_w>50?' on':'');
 
-  // Footer
-  document.getElementById('f-bv').textContent=d.batt_v.toFixed(1)+'V';
-  document.getElementById('f-bt').textContent=d.batt_temp>5?d.batt_temp.toFixed(1)+'°C':'—';
-  document.getElementById('f-gv').textContent=d.grid_v.toFixed(0)+'V';
-  document.getElementById('f-hz').textContent=d.grid_hz.toFixed(2)+'Hz';
+  // Footer (monthly stats updated separately by refreshMonthly)
+  // Tech stats in advanced view
+  document.getElementById('a-bv').textContent=d.batt_v.toFixed(1)+'V';
+  document.getElementById('a-bt').textContent=d.batt_temp>5?d.batt_temp.toFixed(1)+'°C':'—';
+  document.getElementById('a-gv').textContent=d.grid_v.toFixed(0)+'V';
+  document.getElementById('a-hz').textContent=d.grid_hz.toFixed(2)+'Hz';
   const ss=d.self_suff??0;
   const sse=document.getElementById('f-ss');
   sse.textContent=ss+'%';sse.style.color=ss>80?'var(--green)':ss>50?'var(--amber)':'var(--red)';
@@ -1145,6 +1213,33 @@ function groupBy(arr,key){
   return m;
 }
 
+// ── MONTHLY STATS ────────────────────────────────────────────────────────────
+let monthlyTimer = null;
+
+async function refreshMonthly(){
+  if(!currentSite) return;
+  try{
+    const r = await fetch(`/api/monthly?site=${encodeURIComponent(currentSite)}`);
+    const d = await r.json();
+    if(!d.error) renderMonthly(d);
+  } catch(e){ console.error('monthly fetch:', e); }
+  // Refresh every 15 min — monthly figures change slowly
+  monthlyTimer = setTimeout(refreshMonthly, 15 * 60 * 1000);
+}
+
+function renderMonthly(d){
+  window._monthly = d; // store for rate recalculation
+  const pv   = parseFloat(d.month_pv_kwh)   || 0;
+  const grid = parseFloat(d.month_grid_kwh)  || 0;
+  const pvVal   = Math.max(0, calcCost(pv));
+  const gridCost = Math.max(0, calcCost(grid));
+
+  document.getElementById('f-mpv').textContent   = pv.toFixed(1)   + ' kWh';
+  document.getElementById('f-mgrid').textContent  = grid.toFixed(1)  + ' kWh';
+  document.getElementById('f-mpvr').textContent   = 'R' + pvVal.toFixed(2);
+  document.getElementById('f-mgridr').textContent = 'R' + gridCost.toFixed(2);
+}
+
 // ── WEATHER ───────────────────────────────────────────────────────────────────
 let wxTimer = null;
 
@@ -1239,7 +1334,7 @@ async function loadSites(){
   const sites=await r.json();
   const sel=document.getElementById('site-sel');
   sel.innerHTML=sites.map(s=>`<option value="${s.name}">${s.display}</option>`).join('');
-  if(sites.length){currentSite=sites[0].name;refresh();refreshWeather();}
+  if(sites.length){currentSite=sites[0].name;refresh();refreshWeather();refreshMonthly();}
 }
 
 function onSiteChange(){
@@ -1253,6 +1348,7 @@ function onSiteChange(){
   Object.values(charts).forEach(c=>c.destroy());charts={};
   refresh();
   refreshWeather();
+  refreshMonthly();
   if(currentView==='adv')loadCharts();
 }
 
@@ -1534,6 +1630,16 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({'error': 'No sites'}, 400)
                     return
                 self.send_json(get_flow(site))
+
+            elif parsed.path == '/api/monthly':
+                site = qs.get('site', [None])[0]
+                if not site:
+                    sites = get_sites()
+                    site = sites[0]['name'] if sites else None
+                if not site:
+                    self.send_json({'error': 'No sites'}, 400)
+                    return
+                self.send_json(get_monthly(site))
 
             elif parsed.path == '/api/weather':
                 site = qs.get('site', [None])[0]
