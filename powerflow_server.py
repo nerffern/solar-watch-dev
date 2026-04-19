@@ -873,7 +873,7 @@ function onCycleDurChange(){
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-function fmt(w){const a=Math.abs(w);return a>=1000?(a/1000).toFixed(1)+' kW':a+' W'}
+function fmt(w){const n=parseFloat(w)||0;const a=Math.abs(n);return a>=1000?(a/1000).toFixed(1)+' kW':Math.round(a)+' W'}
 function spd(w){const a=Math.abs(w);if(a<15)return 'idle';if(a<600)return 'slow';if(a<2500)return 'med';return 'fast'}
 function fdir(w,inv=false){if(Math.abs(w)<15)return 'idle';return(inv?w<0:w>0)?'fwd':'rev'}
 function sc(s){return s>60?'var(--green)':s>25?'var(--amber)':'var(--red)'}
@@ -1133,9 +1133,10 @@ function buildTempChart(data){
 }
 
 function buildPeaks(data){
-  const fmtW=w=>w>=1000?(w/1000).toFixed(1)+' kW':w+' W';
-  document.getElementById('a-peak-pv').textContent=fmtW(data.peak_pv||0);
-  document.getElementById('a-peak-load').textContent=fmtW(data.peak_load||0);
+  // PostgreSQL NUMERIC comes back as strings — parseFloat before any arithmetic
+  const fmtW=w=>{const n=parseFloat(w)||0;return n>=1000?(n/1000).toFixed(1)+' kW':Math.round(n)+' W';};
+  document.getElementById('a-peak-pv').textContent=fmtW(data.peak_pv);
+  document.getElementById('a-peak-load').textContent=fmtW(data.peak_load);
 }
 
 function groupBy(arr,key){
