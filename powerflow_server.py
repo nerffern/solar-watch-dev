@@ -1082,6 +1082,26 @@ function mkOpts(){
   }
 };}
 
+// Chart options for PV/Load charts that have a per-inverter + combined dataset.
+// The combined dataset is hidden from the tooltip — afterBody shows accurate sum
+// computed from the aligned per-inverter values instead.
+function mkOptsCombined(){
+  const base=mkOpts();
+  base.plugins.tooltip.filter=function(item){
+    // Exclude combined dataset from tooltip items
+    return !item.dataset.label.includes('Combined');
+  };
+  base.plugins.tooltip.callbacks={
+    afterBody:function(items){
+      if(items.length<2) return [];
+      const total=items.reduce((s,t)=>s+(t.parsed.y||0),0);
+      return ['━━━━━━━━━━━━━━━','Combined: '+Math.round(total).toLocaleString()+' W'];
+    }
+  };
+  return base;
+}
+
+
 function makeChart(id,cfg){
   if(charts[id]){charts[id].destroy();delete charts[id];}
   const ctx=document.getElementById(id);
@@ -1117,41 +1137,58 @@ async function loadCharts(){
 }
 
 function buildPVChart(data){
-  // data: [{time, inverter_name, pv_w}, ...] + [{time, combined_w}]
   const inv=groupBy(data.per_inv,'inverter_name');
   const colors=['#2ecc71','#f5a623','#4fc3f7','#9b59b6'];
   const datasets=Object.entries(inv).map(([name,rows],i)=>({
-    label:`PV (W) ${name}`,data:rows.map(r=>({x:new Date(r.time),y:r.pv_w})),
-    borderColor:colors[i],backgroundColor:'transparent',fill:false,tension:.3,borderWidth:2,pointRadius:0,
+    label:`PV (W) ${name}`,
+    data:rows.map(r=>({x:new Date(r.time),y:parseFloat(r.pv_w)||0})),
+    borderColor:colors[i],backgroundColor:'transparent',
+    fill:false,tension:.3,borderWidth:2,pointRadius:0,
   }));
+  // Server-side combined — correct SQL, correct visual line
+  // Hidden from tooltip (tooltip shows per-inverter values + computed sum)
   if(data.combined?.length){
-    datasets.push({label:'Combined Total (W)',data:data.combined.map(r=>({x:new Date(r.time),y:r.combined_w})),
-      borderColor:'rgba(255,255,255,0.5)',backgroundColor:'rgba(255,255,255,0.12)',fill:true,tension:.3,borderWidth:3,pointRadius:0,});
+    datasets.push({
+      label:'Combined Total (W)',
+      data:data.combined.map(r=>({x:new Date(r.time),y:parseFloat(r.combined_w)||0})),
+      borderColor:'rgba(255,255,255,0.5)',backgroundColor:'rgba(255,255,255,0.12)',
+      fill:true,tension:.3,borderWidth:3,pointRadius:0,
+      tooltip:{enabled:false}, // hide from tooltip — use afterBody computed sum
+    });
   }
-  makeChart('ch-pv',{type:'line',data:{datasets},options:mkOpts()});
+  makeChart('ch-pv',{type:'line',data:{datasets},options:mkOptsCombined()});
 }
 
 function buildLoadChart(data){
   const inv=groupBy(data.per_inv,'inverter_name');
   const colors=['#2ecc71','#f5a623','#4fc3f7'];
   const datasets=Object.entries(inv).map(([name,rows],i)=>({
-    label:`Load (W) ${name}`,data:rows.map(r=>({x:new Date(r.time),y:r.load_w})),
-    borderColor:colors[i],backgroundColor:'transparent',fill:false,tension:.3,borderWidth:2,pointRadius:0,
+    label:`Load (W) ${name}`,
+    data:rows.map(r=>({x:new Date(r.time),y:parseFloat(r.load_w)||0})),
+    borderColor:colors[i],backgroundColor:'transparent',
+    fill:false,tension:.3,borderWidth:2,pointRadius:0,
   }));
+  // Server-side combined — correct SQL, correct visual line
+  // Hidden from tooltip — afterBody callback shows accurate computed sum
   if(data.combined?.length){
-    datasets.push({label:'Combined Load (W)',data:data.combined.map(r=>({x:new Date(r.time),y:r.combined_w})),
-      borderColor:'rgba(255,255,255,0.5)',backgroundColor:'rgba(255,255,255,0.12)',fill:true,tension:.3,borderWidth:4,pointRadius:0,});
+    datasets.push({
+      label:'Combined Load (W)',
+      data:data.combined.map(r=>({x:new Date(r.time),y:parseFloat(r.combined_w)||0})),
+      borderColor:'rgba(255,255,255,0.5)',backgroundColor:'rgba(255,255,255,0.12)',
+      fill:true,tension:.3,borderWidth:4,pointRadius:0,
+      tooltip:{enabled:false}, // hide from tooltip — use afterBody computed sum
+    });
   }
-  makeChart('ch-load',{type:'line',data:{datasets},options:mkOpts()});
+  makeChart('ch-load',{type:'line',data:{datasets},options:mkOptsCombined()});
 }
 
 function buildBattChart(data){
   const opts=mkOpts();
   opts.scales.y1={position:'right',ticks:{color:'#2ecc71',font:{size:10},callback:v=>v+'%'},grid:{display:false},border:{color:'rgba(255,255,255,.06)'},min:0,max:100};
   const datasets=[
-    {label:'Battery Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:r.batt_w}))||[],
+    {label:'Battery Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:parseFloat(r.batt_w)||0}))||[],
      borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,.15)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
-    {label:'SOC (%)',data:data.soc?.map(r=>({x:new Date(r.time),y:r.soc}))||[],
+    {label:'SOC (%)',data:data.soc?.map(r=>({x:new Date(r.time),y:parseFloat(r.soc)||0}))||[],
      borderColor:'#2ecc71',backgroundColor:'transparent',fill:false,tension:.3,borderWidth:2,pointRadius:0,yAxisID:'y1'},
   ];
   makeChart('ch-batt',{type:'line',data:{datasets},options:opts});
@@ -1161,9 +1198,9 @@ function buildGridChart(data){
   const opts=mkOpts();
   opts.scales.y1={position:'right',ticks:{color:'#4fc3f7',font:{size:10},callback:v=>v+'V'},grid:{display:false},border:{color:'rgba(255,255,255,.06)'}};
   const datasets=[
-    {label:'Grid Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:r.grid_w}))||[],
+    {label:'Grid Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:parseFloat(r.grid_w)||0}))||[],
      borderColor:'#FADE2A',backgroundColor:'rgba(250,222,42,.15)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
-    {label:'Grid Voltage (V)',data:data.voltage?.map(r=>({x:new Date(r.time),y:r.grid_v}))||[],
+    {label:'Grid Voltage (V)',data:data.voltage?.map(r=>({x:new Date(r.time),y:parseFloat(r.grid_v)||0}))||[],
      borderColor:'#4fc3f7',backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0,yAxisID:'y1'},
   ];
   makeChart('ch-grid',{type:'line',data:{datasets},options:opts});
@@ -1173,11 +1210,11 @@ function buildDailyChart(data){
   const labels=data.map(r=>r.day);
   const colors={pv:'#FADE2A',load:'#e74c3c',grid:'#4fc3f7',chg:'#f5a623',dis:'#2ecc71'};
   const datasets=[
-    {label:'PV Generated',data:data.map(r=>r.pv),backgroundColor:colors.pv,barPercentage:.7},
-    {label:'Load Consumed',data:data.map(r=>r.load),backgroundColor:colors.load,barPercentage:.7},
-    {label:'Grid Import',data:data.map(r=>r.grid),backgroundColor:colors.grid,barPercentage:.7},
-    {label:'Batt Charge',data:data.map(r=>r.chg),backgroundColor:colors.chg,barPercentage:.7},
-    {label:'Batt Discharge',data:data.map(r=>r.dis),backgroundColor:colors.dis,barPercentage:.7},
+    {label:'PV Generated',data:data.map(r=>parseFloat(r.pv)||0),backgroundColor:colors.pv,barPercentage:.7},
+    {label:'Load Consumed',data:data.map(r=>parseFloat(r.load)||0),backgroundColor:colors.load,barPercentage:.7},
+    {label:'Grid Import',data:data.map(r=>parseFloat(r.grid)||0),backgroundColor:colors.grid,barPercentage:.7},
+    {label:'Batt Charge',data:data.map(r=>parseFloat(r.chg)||0),backgroundColor:colors.chg,barPercentage:.7},
+    {label:'Batt Discharge',data:data.map(r=>parseFloat(r.dis)||0),backgroundColor:colors.dis,barPercentage:.7},
   ];
   const opts=mkOpts();
   opts.scales.x={type:'category',ticks:{color:'#4a5070',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'}};
@@ -1192,8 +1229,8 @@ function buildTempChart(data){
   let ci=0;
   Object.entries(inv).forEach(([name,rows])=>{
     const c=colors[ci++%colors.length];
-    datasets.push({label:`Inv Temp ${name}`,data:rows.filter(r=>r.inv_temp).map(r=>({x:new Date(r.time),y:r.inv_temp})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0});
-    datasets.push({label:`DC Temp ${name}`,data:rows.filter(r=>r.dc_temp).map(r=>({x:new Date(r.time),y:r.dc_temp})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1,borderDash:[4,4],pointRadius:0});
+    datasets.push({label:`Inv Temp ${name}`,data:rows.filter(r=>r.inv_temp).map(r=>({x:new Date(r.time),y:parseFloat(r.inv_temp)||0})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0});
+    datasets.push({label:`DC Temp ${name}`,data:rows.filter(r=>r.dc_temp).map(r=>({x:new Date(r.time),y:parseFloat(r.dc_temp)||0})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1,borderDash:[4,4],pointRadius:0});
   });
   const opts=mkOpts();
   opts.scales.y.ticks.callback=v=>v+'°C';
