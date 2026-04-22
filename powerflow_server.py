@@ -1150,7 +1150,7 @@ function buildPVChart(data){
     label:`PV (W) ${name}`,
     data:rows.map(r=>({x:new Date(r.time),y:parseFloat(r.pv_w)||0})),
     borderColor:colors[i],backgroundColor:'transparent',
-    fill:false,tension:.3,borderWidth:2,pointRadius:0,
+    fill:false,tension:.2,borderWidth:1.5,pointRadius:0,
   }));
   // Server-side combined — correct SQL, correct visual line
   // Hidden from tooltip (tooltip shows per-inverter values + computed sum)
@@ -1158,8 +1158,8 @@ function buildPVChart(data){
     datasets.push({
       label:'Combined Total (W)',
       data:data.combined.map(r=>({x:new Date(r.time),y:parseFloat(r.combined_w)||0})),
-      borderColor:'rgba(255,255,255,0.5)',backgroundColor:'rgba(255,255,255,0.12)',
-      fill:true,tension:.3,borderWidth:3,pointRadius:0,
+      borderColor:'rgba(255,255,255,0.35)',backgroundColor:'transparent',
+      fill:false,tension:.2,borderWidth:2,pointRadius:0,
       tooltip:{enabled:false}, // hide from tooltip — use afterBody computed sum
     });
   }
@@ -1173,7 +1173,7 @@ function buildLoadChart(data){
     label:`Load (W) ${name}`,
     data:rows.map(r=>({x:new Date(r.time),y:parseFloat(r.load_w)||0})),
     borderColor:colors[i],backgroundColor:'transparent',
-    fill:false,tension:.3,borderWidth:2,pointRadius:0,
+    fill:false,tension:.2,borderWidth:1.5,pointRadius:0,
   }));
   // Server-side combined — correct SQL, correct visual line
   // Hidden from tooltip — afterBody callback shows accurate computed sum
@@ -1181,8 +1181,8 @@ function buildLoadChart(data){
     datasets.push({
       label:'Combined Load (W)',
       data:data.combined.map(r=>({x:new Date(r.time),y:parseFloat(r.combined_w)||0})),
-      borderColor:'rgba(255,255,255,0.5)',backgroundColor:'rgba(255,255,255,0.12)',
-      fill:true,tension:.3,borderWidth:4,pointRadius:0,
+      borderColor:'rgba(255,255,255,0.35)',backgroundColor:'transparent',
+      fill:false,tension:.2,borderWidth:2,pointRadius:0,
       tooltip:{enabled:false}, // hide from tooltip — use afterBody computed sum
     });
   }
@@ -1194,9 +1194,9 @@ function buildBattChart(data){
   opts.scales.y1={position:'right',ticks:{color:'#2ecc71',font:{size:10},callback:v=>v+'%'},grid:{display:false},border:{color:'rgba(255,255,255,.06)'},min:0,max:100};
   const datasets=[
     {label:'Battery Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:parseFloat(r.batt_w)||0}))||[],
-     borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,.15)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
+     borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,.10)',fill:true,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
     {label:'SOC (%)',data:data.soc?.map(r=>({x:new Date(r.time),y:parseFloat(r.soc)||0}))||[],
-     borderColor:'#2ecc71',backgroundColor:'transparent',fill:false,tension:.3,borderWidth:2,pointRadius:0,yAxisID:'y1'},
+     borderColor:'#2ecc71',backgroundColor:'transparent',fill:false,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y1'},
   ];
   makeChart('ch-batt',{type:'line',data:{datasets},options:opts});
 }
@@ -1206,9 +1206,9 @@ function buildGridChart(data){
   opts.scales.y1={position:'right',ticks:{color:'#4fc3f7',font:{size:10},callback:v=>v+'V'},grid:{display:false},border:{color:'rgba(255,255,255,.06)'}};
   const datasets=[
     {label:'Grid Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:parseFloat(r.grid_w)||0}))||[],
-     borderColor:'#FADE2A',backgroundColor:'rgba(250,222,42,.15)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
+     borderColor:'#FADE2A',backgroundColor:'rgba(250,222,42,.10)',fill:true,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
     {label:'Grid Voltage (V)',data:data.voltage?.map(r=>({x:new Date(r.time),y:parseFloat(r.grid_v)||0}))||[],
-     borderColor:'#4fc3f7',backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0,yAxisID:'y1'},
+     borderColor:'#4fc3f7',backgroundColor:'transparent',fill:false,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y1'},
   ];
   makeChart('ch-grid',{type:'line',data:{datasets},options:opts});
 }
@@ -1236,8 +1236,8 @@ function buildTempChart(data){
   let ci=0;
   Object.entries(inv).forEach(([name,rows])=>{
     const c=colors[ci++%colors.length];
-    datasets.push({label:`Inv Temp ${name}`,data:rows.filter(r=>r.inv_temp).map(r=>({x:new Date(r.time),y:parseFloat(r.inv_temp)||0})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1.5,pointRadius:0});
-    datasets.push({label:`DC Temp ${name}`,data:rows.filter(r=>r.dc_temp).map(r=>({x:new Date(r.time),y:parseFloat(r.dc_temp)||0})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.3,borderWidth:1,borderDash:[4,4],pointRadius:0});
+    datasets.push({label:`Inv Temp ${name}`,data:rows.filter(r=>r.inv_temp).map(r=>({x:new Date(r.time),y:parseFloat(r.inv_temp)||0})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.2,borderWidth:1.5,pointRadius:0});
+    datasets.push({label:`DC Temp ${name}`,data:rows.filter(r=>r.dc_temp).map(r=>({x:new Date(r.time),y:parseFloat(r.dc_temp)||0})),borderColor:c,backgroundColor:'transparent',fill:false,tension:.2,borderWidth:1,borderDash:[4,4],pointRadius:0});
   });
   const opts=mkOpts();
   opts.scales.y.ticks.callback=v=>v+'°C';
