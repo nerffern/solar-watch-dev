@@ -390,7 +390,7 @@ select{
   flex:1;overflow-y:auto;overflow-x:hidden;
   display:grid;
   grid-template-columns:1fr 1fr;
-  grid-template-rows:repeat(3,min(28vh,280px)) min(28vh,280px) min(28vh,280px);
+  grid-template-rows:min(26vh,260px) min(26vh,260px) min(26vh,260px) min(26vh,260px) min(32vh,320px) min(22vh,220px);
   gap:1px;
   background:var(--border);
   min-height:0;
@@ -412,7 +412,7 @@ select{
 /* Stat panels in advanced view */
 .adv-stats{
   grid-column:1/-1;display:flex;gap:1px;background:var(--border);
-  height:min(14vh,110px);flex-shrink:0;
+  height:min(14vh,110px);flex-shrink:0;flex-wrap:wrap;
 }
 .adv-stat{
   flex:1;background:var(--surface);display:flex;flex-direction:column;
@@ -632,7 +632,7 @@ footer{
     border-bottom:1px solid var(--border);
   }
   .adv-order-1{order:1}.adv-order-2{order:2}.adv-order-3{order:3}
-  .adv-order-4{order:4}.adv-order-5{order:5}.adv-order-6{order:6}
+  .adv-order-4{order:4}.adv-order-5{order:5}.adv-order-6{order:6}.adv-order-7{order:7}
   .adv-stat-lbl{font-size:8px}
   .adv-stat-val{font-size:clamp(14px,4vw,22px)}
 }
@@ -820,6 +820,7 @@ footer{
       <div class="adv-stat adv-order-4"><span class="adv-stat-lbl">Solar Savings</span><span class="adv-stat-val" id="a-savings" style="color:var(--green)">—</span></div>
       <div class="adv-stat adv-order-5"><span class="adv-stat-lbl">Peak Solar Today</span><span class="adv-stat-val" id="a-peak-pv" style="color:var(--solar)">—</span></div>
       <div class="adv-stat adv-order-6"><span class="adv-stat-lbl">Peak Load Today</span><span class="adv-stat-val" id="a-peak-load" style="color:var(--amber)">—</span></div>
+      <div class="adv-stat adv-order-7"><span class="adv-stat-lbl">Peak Grid Draw</span><span class="adv-stat-val" id="a-peak-grid" style="color:var(--red)">—</span></div>
     </div>
     <!-- Technical stats strip — shown in advanced view only -->
     <div class="tech-stats" id="tech-stats">
@@ -830,12 +831,18 @@ footer{
     </div>
     <!-- Chart grid -->
     <div class="adv-inner" id="adv-inner">
-      <div class="chart-panel span2"><div class="chart-title">Solar PV Power — Per Inverter &amp; Combined</div><div class="chart-wrap"><canvas id="ch-pv"></canvas></div></div>
-      <div class="chart-panel span2"><div class="chart-title">Load Power — Per Inverter &amp; Combined</div><div class="chart-wrap"><canvas id="ch-load"></canvas></div></div>
-      <div class="chart-panel"><div class="chart-title">Battery Power &amp; SOC</div><div class="chart-wrap"><canvas id="ch-batt"></canvas></div></div>
-      <div class="chart-panel"><div class="chart-title">Grid Power &amp; Voltage</div><div class="chart-wrap"><canvas id="ch-grid"></canvas></div></div>
-      <div class="chart-panel span2"><div class="chart-title">Daily Energy — Combined Site (Last 14 Days)</div><div class="chart-wrap"><canvas id="ch-daily"></canvas></div></div>
-      <div class="chart-panel span2"><div class="chart-title">Inverter Temperatures</div><div class="chart-wrap"><canvas id="ch-temp"></canvas></div></div>
+      <div class="chart-panel span2"><div class="chart-title">☀️ Solar PV Power — Per Inverter &amp; Combined</div><div class="chart-wrap"><canvas id="ch-pv"></canvas></div></div>
+      <div class="chart-panel span2"><div class="chart-title">🔋 Battery Power &amp; SOC</div><div class="chart-wrap"><canvas id="ch-batt"></canvas></div></div>
+      <div class="chart-panel span2"><div class="chart-title">🔌 Grid Power &amp; Voltage</div><div class="chart-wrap"><canvas id="ch-grid"></canvas></div></div>
+      <div class="chart-panel span2"><div class="chart-title">🏠 Load Power — Per Inverter &amp; Combined</div><div class="chart-wrap"><canvas id="ch-load"></canvas></div></div>
+      <div class="chart-panel span2"><div class="chart-title">📊 Daily Energy — Combined Site (Last 14 Days)</div><div class="chart-wrap"><canvas id="ch-daily"></canvas></div></div>
+      <div class="chart-panel span2 temp-panel" id="temp-panel-wrap">
+        <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleTemps()">
+          <span>🌡️ Inverter Temperatures</span>
+          <span id="temp-toggle-icon" style="font-size:clamp(10px,.9vw,14px);color:var(--muted);letter-spacing:.06em">▼ HIDE</span>
+        </div>
+        <div class="chart-wrap" id="temp-chart-wrap"><canvas id="ch-temp"></canvas></div>
+      </div>
     </div>
   </div>
 
@@ -1242,6 +1249,7 @@ function buildPeaks(data){
   const fmtW=w=>{const n=parseFloat(w)||0;return n>=1000?(n/1000).toFixed(1)+' kW':Math.round(n)+' W';};
   document.getElementById('a-peak-pv').textContent=fmtW(data.peak_pv);
   document.getElementById('a-peak-load').textContent=fmtW(data.peak_load);
+  if(data.peak_grid!=null) document.getElementById('a-peak-grid').textContent=fmtW(data.peak_grid);
 }
 
 function groupBy(arr,key){
@@ -1275,6 +1283,18 @@ function renderMonthly(d){
   document.getElementById('f-mgrid').textContent  = grid.toFixed(1)  + ' kWh';
   document.getElementById('f-mpvr').textContent   = 'R' + pvVal.toFixed(2);
   document.getElementById('f-mgridr').textContent = 'R' + gridCost.toFixed(2);
+}
+
+// ── TEMP CHART TOGGLE ────────────────────────────────────────────────────────
+let tempsVisible = true;
+function toggleTemps(){
+  tempsVisible = !tempsVisible;
+  const wrap = document.getElementById('temp-chart-wrap');
+  const icon = document.getElementById('temp-toggle-icon');
+  wrap.style.display = tempsVisible ? '' : 'none';
+  icon.textContent = tempsVisible ? '▼ HIDE' : '▶ SHOW';
+  // Resize chart when shown
+  if(tempsVisible && charts['ch-temp']) charts['ch-temp'].resize();
 }
 
 // ── WEATHER ───────────────────────────────────────────────────────────────────
@@ -1563,14 +1583,19 @@ def get_chart(chart: str, site: str) -> dict:
     elif chart == 'peaks':
         row = query_one("""
             SELECT
-              COALESCE(MAX(pv_total), 0)   as peak_pv,
-              COALESCE(MAX(load_total), 0) as peak_load
+              COALESCE(MAX(pv_total),   0) AS peak_pv,
+              COALESCE(MAX(load_total), 0) AS peak_load,
+              COALESCE(MAX(grid_total), 0) AS peak_grid
             FROM (
-              SELECT ts, SUM(avg_pv) as pv_total, SUM(avg_load) as load_total
+              SELECT ts,
+                SUM(avg_pv)   AS pv_total,
+                SUM(avg_load) AS load_total,
+                SUM(avg_grid) AS grid_total
               FROM (
-                SELECT DATE_TRUNC('minute', time) as ts, inverter_name,
-                  AVG(pv1_power + COALESCE(pv2_power,0)) as avg_pv,
-                  AVG(load_power) as avg_load
+                SELECT DATE_TRUNC('minute', time) AS ts, inverter_name,
+                  AVG(pv1_power + COALESCE(pv2_power,0)) AS avg_pv,
+                  AVG(load_power)  AS avg_load,
+                  AVG(CASE WHEN grid_power > 0 THEN grid_power ELSE 0 END) AS avg_grid
                 FROM solar_readings
                 WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
                              AT TIME ZONE 'Africa/Johannesburg' + INTERVAL '1 hour'

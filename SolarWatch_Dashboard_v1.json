@@ -1297,7 +1297,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 8
       },
@@ -1478,9 +1478,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
+        "w": 24,
+        "x": 0,
+        "y": 16
       },
       "id": 21,
       "options": {
@@ -1706,9 +1706,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 16
+        "y": 32
       },
       "id": 22,
       "options": {
@@ -1870,9 +1870,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
+        "w": 24,
+        "x": 0,
+        "y": 24
       },
       "id": 23,
       "options": {
@@ -1984,7 +1984,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 40
       },
       "id": 24,
       "options": {
@@ -2130,7 +2130,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 40
       },
       "id": 25,
       "options": {
@@ -2324,7 +2324,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 48
       },
       "id": 515,
       "options": {
@@ -2381,7 +2381,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 57
       },
       "id": 400,
       "panels": [],
@@ -2506,7 +2506,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 58
       },
       "id": 313,
       "options": {
@@ -2655,7 +2655,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 58
       },
       "id": 314,
       "options": {
@@ -2692,7 +2692,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 66
       },
       "id": 102,
       "panels": [],
@@ -2762,7 +2762,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 67
       },
       "id": 60,
       "options": {
@@ -2862,7 +2862,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 51
+        "y": 67
       },
       "id": 61,
       "options": {
@@ -2989,7 +2989,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 75
       },
       "id": 62,
       "options": {
@@ -3036,7 +3036,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 83
       },
       "id": 103,
       "panels": [],
@@ -3190,7 +3190,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 84
       },
       "id": 312,
       "options": {
@@ -3382,7 +3382,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 76
+        "y": 92
       },
       "id": 30,
       "options": {
@@ -3574,7 +3574,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 76
+        "y": 92
       },
       "id": 31,
       "options": {
@@ -3621,7 +3621,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 100
       },
       "id": 200,
       "panels": [],
@@ -3666,7 +3666,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 85
+        "y": 101
       },
       "id": 201,
       "options": {
@@ -3743,7 +3743,7 @@
         "h": 3,
         "w": 4,
         "x": 4,
-        "y": 85
+        "y": 101
       },
       "id": 202,
       "options": {
@@ -3815,8 +3815,8 @@
       "gridPos": {
         "h": 3,
         "w": 4,
-        "x": 8,
-        "y": 85
+        "x": 12,
+        "y": 101
       },
       "id": 203,
       "options": {
@@ -3887,9 +3887,9 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
-        "x": 12,
-        "y": 85
+        "w": 2,
+        "x": 16,
+        "y": 101
       },
       "id": 204,
       "options": {
@@ -3965,8 +3965,8 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 15,
-        "y": 85
+        "x": 18,
+        "y": 101
       },
       "id": 205,
       "options": {
@@ -4037,9 +4037,9 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 6,
-        "x": 18,
-        "y": 85
+        "w": 3,
+        "x": 21,
+        "y": 101
       },
       "id": 206,
       "options": {
@@ -4141,7 +4141,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 88
+        "y": 104
       },
       "id": 211,
       "options": {
@@ -4265,7 +4265,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 88
+        "y": 104
       },
       "id": 212,
       "options": {
@@ -4312,7 +4312,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 112
       },
       "id": 300,
       "panels": [],
@@ -4357,7 +4357,7 @@
         "h": 3,
         "w": 3,
         "x": 0,
-        "y": 97
+        "y": 113
       },
       "id": 301,
       "options": {
@@ -4430,7 +4430,7 @@
         "h": 3,
         "w": 3,
         "x": 3,
-        "y": 97
+        "y": 113
       },
       "id": 302,
       "options": {
@@ -4503,7 +4503,7 @@
         "h": 3,
         "w": 3,
         "x": 6,
-        "y": 97
+        "y": 113
       },
       "id": 303,
       "options": {
@@ -4576,7 +4576,7 @@
         "h": 3,
         "w": 3,
         "x": 9,
-        "y": 97
+        "y": 113
       },
       "id": 54,
       "options": {
@@ -4649,7 +4649,7 @@
         "h": 3,
         "w": 3,
         "x": 12,
-        "y": 97
+        "y": 113
       },
       "id": 55,
       "options": {
@@ -4722,7 +4722,7 @@
         "h": 3,
         "w": 3,
         "x": 15,
-        "y": 97
+        "y": 113
       },
       "id": 56,
       "options": {
@@ -4795,7 +4795,7 @@
         "h": 3,
         "w": 3,
         "x": 0,
-        "y": 100
+        "y": 116
       },
       "id": 304,
       "options": {
@@ -4868,7 +4868,7 @@
         "h": 3,
         "w": 3,
         "x": 3,
-        "y": 100
+        "y": 116
       },
       "id": 305,
       "options": {
@@ -4941,7 +4941,7 @@
         "h": 3,
         "w": 3,
         "x": 6,
-        "y": 100
+        "y": 116
       },
       "id": 306,
       "options": {
@@ -5014,7 +5014,7 @@
         "h": 3,
         "w": 3,
         "x": 9,
-        "y": 100
+        "y": 116
       },
       "id": 307,
       "options": {
@@ -5087,7 +5087,7 @@
         "h": 3,
         "w": 3,
         "x": 12,
-        "y": 100
+        "y": 116
       },
       "id": 308,
       "options": {
@@ -5160,7 +5160,7 @@
         "h": 3,
         "w": 3,
         "x": 15,
-        "y": 100
+        "y": 116
       },
       "id": 309,
       "options": {
@@ -5297,7 +5297,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 103
+        "y": 119
       },
       "id": 310,
       "options": {
@@ -5430,7 +5430,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 103
+        "y": 119
       },
       "id": 311,
       "options": {
@@ -5467,7 +5467,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 111
+        "y": 127
       },
       "id": 104,
       "panels": [],
@@ -5726,7 +5726,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 112
+        "y": 128
       },
       "id": 40,
       "options": {
@@ -5760,7 +5760,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 121
+        "y": 137
       },
       "id": 500,
       "panels": [],
@@ -5809,7 +5809,7 @@
         "h": 3,
         "w": 6,
         "x": 0,
-        "y": 122
+        "y": 138
       },
       "id": 501,
       "options": {
@@ -5887,7 +5887,7 @@
         "h": 3,
         "w": 6,
         "x": 6,
-        "y": 122
+        "y": 138
       },
       "id": 502,
       "options": {
@@ -5963,7 +5963,7 @@
         "h": 3,
         "w": 6,
         "x": 12,
-        "y": 122
+        "y": 138
       },
       "id": 503,
       "options": {
@@ -6104,7 +6104,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 122
+        "y": 138
       },
       "id": 504,
       "options": {
@@ -6278,7 +6278,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 125
+        "y": 141
       },
       "id": 505,
       "options": {
@@ -6428,7 +6428,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 125
+        "y": 141
       },
       "id": 506,
       "options": {
@@ -6565,7 +6565,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 133
+        "y": 149
       },
       "id": 507,
       "options": {
@@ -6674,7 +6674,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 133
+        "y": 149
       },
       "id": 508,
       "options": {
@@ -6706,6 +6706,78 @@
       ],
       "title": "\ud83c\udf27\ufe0f Precipitation",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "solarwatch_pg"
+      },
+      "description": "Highest combined grid import power in any single minute today. Indicates peak demand events.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 2000
+              },
+              {
+                "color": "red",
+                "value": 5000
+              }
+            ]
+          },
+          "unit": "watt",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 8,
+        "y": 101
+      },
+      "id": 207,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "solarwatch_pg"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT NOW() AS time,\n  COALESCE(MAX(minute_total), 0) AS \"Peak Grid Draw (W)\"\nFROM (\n  SELECT ts, SUM(avg_grid) AS minute_total\n  FROM (\n    SELECT DATE_TRUNC('minute', time) AS ts, inverter_name,\n      AVG(CASE WHEN grid_power > 0 THEN grid_power ELSE 0 END) AS avg_grid\n    FROM solar_readings\n    WHERE $__timeFilter(time)\n    AND site_name ILIKE ${site:singlequote}\n    GROUP BY 1, 2\n  ) inv\n  GROUP BY ts\n) sub",
+          "refId": "A"
+        }
+      ],
+      "title": "\ud83d\udd0c Peak Grid Draw Today",
+      "type": "stat"
     }
   ],
   "preload": false,
