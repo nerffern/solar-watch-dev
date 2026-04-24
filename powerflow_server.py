@@ -257,9 +257,15 @@ HTML = r"""<!DOCTYPE html>
   --mono:'DM Mono',monospace;--sans:'Barlow',sans-serif;
 }
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+html.adv-scroll,html.adv-scroll body{overflow:auto;height:auto}
 
 /* ── APP SHELL ── */
 .app{display:grid;grid-template-rows:5.5vh auto 1fr 11vh;height:100vh;width:100vw}
+.app.adv-mode{
+  display:flex;flex-direction:column;
+  height:auto;min-height:100vh;
+  width:100vw;
+}
 
 /* ── HEADER ── */
 header{
@@ -387,13 +393,14 @@ select{
 /* ── ADVANCED VIEW ── */
 #view-adv{flex-direction:column;overflow:hidden;height:100%}
 .adv-inner{
-  flex:1;overflow-y:auto;overflow-x:hidden;
+  flex:1;overflow:visible;
   display:grid;
   grid-template-columns:1fr 1fr;
-  grid-template-rows:min(26vh,260px) min(26vh,260px) min(26vh,260px) min(26vh,260px) min(32vh,320px) min(22vh,220px);
+  /* Fixed heights — page scrolls instead of inner div */
+  grid-template-rows:320px 320px 320px 320px 380px 260px;
   gap:1px;
   background:var(--border);
-  min-height:0;
+  width:100%;
 }
 /* Full-width panels */
 .span2{grid-column:1/-1}
@@ -421,6 +428,17 @@ select{
 .adv-stat-lbl{font-size:clamp(9px,.8vw,12px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
 .adv-stat-val{font-size:clamp(18px,2.5vw,40px);font-family:var(--mono);font-weight:700}
 
+/* Advanced footer inner rows */
+#footer-adv > div{gap:1px;background:var(--border)}
+
+/* Smaller stat pills for advanced footer rows */
+.adv-footer-stat{
+  flex:1;background:var(--surface);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;min-width:0;
+}
+.adv-footer-lbl{font-size:clamp(7px,.6vw,10px);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 4px;text-align:center}
+.adv-footer-val{font-size:clamp(11px,1.2vw,20px);font-family:var(--mono);font-weight:600}
+
 /* Technical stats strip — compact row above the charts in advanced view */
 .tech-stats{
   display:flex;align-items:center;justify-content:center;
@@ -432,11 +450,27 @@ select{
 .tech-lbl{font-size:clamp(8px,.7vw,11px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
 .tech-val{font-size:clamp(12px,1.1vw,18px);font-family:var(--mono);font-weight:500;color:var(--text)}
 
+/* ── FOOTER MODE SWITCHING — global, works on all screen sizes ── */
+.footer-hidden{display:none!important}
+
 /* ── FOOTER ── */
 footer{
+  border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;
+  overflow:hidden;
+}
+/* Basic mode footer — horizontal flex row */
+#footer-basic{
   display:flex;align-items:center;justify-content:center;
   gap:clamp(8px,2.2vw,48px);padding:0 3vw;
-  border-top:1px solid var(--border);background:var(--surface);flex-wrap:wrap;flex-shrink:0;
+  width:100%;height:100%;flex-wrap:wrap;
+}
+/* Advanced mode footer — two rows of stat pills */
+#footer-adv{
+  display:flex;flex-direction:column;
+  width:100%;height:100%;
+}
+#footer-adv > div{
+  display:flex;gap:1px;background:var(--border);flex:1;
 }
 .stat{display:flex;flex-direction:column;align-items:center;gap:3px}
 .st-lbl{font-size:clamp(8px,.75vw,11px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
@@ -570,26 +604,41 @@ footer{
   .hub-lbl{font-size:8px}
 
   /* ── FOOTER ── */
-  footer{
-    height:auto;
-    padding:8px 12px;
-    gap:0;
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    justify-items:center;
-    align-items:center;
+  footer{height:auto;padding:0}
+  #footer-basic{
+    padding:8px 12px;gap:0;
+    justify-items:center;align-items:center;
+    width:100%;
   }
-  /* Mobile footer order — daily first, monthly second */
-  footer .stat:nth-child(1){order:1}  /* Self-Suff */
-  footer .stat:nth-child(2){order:2}  /* PV Today */
-  footer .stat:nth-child(3){order:3}  /* Load Today */
-  footer .stat:nth-child(4){order:4}  /* Solar Savings */
-  footer .stat:nth-child(5){order:5}  /* Grid Today */
-  footer .stat:nth-child(6){order:6}  /* Month PV */
-  footer .stat:nth-child(7){order:7}  /* Month PV Value */
-  footer .stat:nth-child(8){order:8}  /* Month Grid */
-  footer .stat:nth-child(9){order:9}  /* Month Grid Cost */
-  footer #clock-wrap{display:none}
+  /* Mobile footer advanced — 4 columns */
+  #footer-basic:not(.footer-hidden){display:grid!important;
+    grid-template-columns:repeat(4,1fr);}
+  #footer-basic .stat:nth-child(1){order:1}
+  #footer-basic .stat:nth-child(2){order:2}
+  #footer-basic .stat:nth-child(3){order:3}
+  #footer-basic .stat:nth-child(4){order:4}
+  #footer-basic .stat:nth-child(5){order:5}
+  #footer-basic .stat:nth-child(6){order:6}
+  #footer-basic .stat:nth-child(7){order:7}
+  #footer-basic .stat:nth-child(8){order:8}
+  #footer-basic .stat:nth-child(9){order:9}
+  #footer-basic #clock-wrap{display:none}
+  /* Advanced footer on mobile — row 1: 4-column grid, row 2: hidden */
+  #footer-adv{flex-direction:column!important}
+  #footer-adv > div:first-child{
+    display:grid!important;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;background:var(--border);
+    flex:none!important;
+  }
+  /* Hide month grid cost on mobile — saves a row */
+  #footer-adv #fa-mgridr,#footer-adv #fa-mgridr+span,
+  #footer-adv [id="fa-mgridr"]~*{display:none}
+  #footer-adv > div:first-child > div:last-child{display:none!important}
+  #footer-adv > div:last-child{display:none!important} /* hide tech+peaks — already in top pills */
+  #footer-adv .adv-footer-stat{padding:4px 2px}
+  #footer-adv .adv-footer-val{font-size:clamp(10px,3.5vw,16px)}
+  #footer-adv .adv-footer-lbl{font-size:clamp(6px,1.8vw,9px)}
 
   .st-lbl{font-size:9px}
   .st-val{font-size:clamp(12px,3.5vw,18px)}
@@ -644,6 +693,13 @@ footer{
   footer{grid-template-columns:repeat(4,1fr)}
   .st-val{font-size:11px}
   .adv-stat{flex:0 0 50%}
+}
+/* Crosshair tooltip label */
+.ch-crosshair-label{
+  position:fixed;background:rgba(17,19,24,.92);border:1px solid var(--border);
+  color:var(--muted);font-family:var(--mono);font-size:11px;
+  padding:2px 6px;border-radius:4px;pointer-events:none;
+  transform:translateX(-50%);white-space:nowrap;z-index:100;
 }
 </style>
 </head>
@@ -848,22 +904,52 @@ footer{
 
 </main>
 
-<!-- FOOTER -->
-<footer>
-  <div class="stat"><span class="st-lbl">Self-Suff</span><span class="st-val" id="f-ss">—</span></div>
-  <div class="stat"><span class="st-lbl">PV Today</span><span class="st-val" id="f-pv" style="color:var(--solar)">—</span></div>
-  <div class="stat"><span class="st-lbl">Load Today</span><span class="st-val" id="f-tl">—</span></div>
-  <div class="stat"><span class="st-lbl">Solar Savings</span><span class="st-val" id="f-sv" style="color:var(--green)">—</span></div>
-  <div class="stat"><span class="st-lbl">Grid Today</span><span class="st-val" id="f-tg">—</span></div>
-  <div class="stat"><span class="st-lbl">Month PV</span><span class="st-val" id="f-mpv" style="color:var(--solar)">—</span></div>
-  <div class="stat"><span class="st-lbl">Month PV Value</span><span class="st-val" id="f-mpvr" style="color:var(--green)">—</span></div>
-  <div class="stat"><span class="st-lbl">Month Grid</span><span class="st-val" id="f-mgrid">—</span></div>
-  <div class="stat"><span class="st-lbl">Month Grid Cost</span><span class="st-val" id="f-mgridr" style="color:var(--red)">—</span></div>
-  <!-- Clock — click to toggle visibility, persists in localStorage -->
-  <div class="stat" id="clock-wrap" onclick="toggleClock()" title="Click to toggle clock" style="cursor:pointer;margin-left:auto;padding-left:clamp(8px,2vw,32px);opacity:0.4;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=clockVisible?1:0.4">
-    <span class="st-lbl">Time</span>
-    <span class="st-val" id="clock" style="font-family:var(--mono);color:var(--muted);font-size:clamp(20px,2.4vw,40px);font-weight:600">--:--:--</span>
+<!-- FOOTER — basic mode: compact stats bar / advanced mode: full stat pills -->
+<footer id="main-footer">
+
+  <!-- BASIC MODE footer (default) -->
+  <div id="footer-basic">
+    <div class="stat"><span class="st-lbl">Self-Suff</span><span class="st-val" id="f-ss">—</span></div>
+    <div class="stat"><span class="st-lbl">PV Today</span><span class="st-val" id="f-pv" style="color:var(--solar)">—</span></div>
+    <div class="stat"><span class="st-lbl">Load Today</span><span class="st-val" id="f-tl">—</span></div>
+    <div class="stat"><span class="st-lbl">Solar Savings</span><span class="st-val" id="f-sv" style="color:var(--green)">—</span></div>
+    <div class="stat"><span class="st-lbl">Grid Today</span><span class="st-val" id="f-tg">—</span></div>
+    <div class="stat"><span class="st-lbl">Month PV</span><span class="st-val" id="f-mpv" style="color:var(--solar)">—</span></div>
+    <div class="stat"><span class="st-lbl">Month PV Value</span><span class="st-val" id="f-mpvr" style="color:var(--green)">—</span></div>
+    <div class="stat"><span class="st-lbl">Month Grid</span><span class="st-val" id="f-mgrid">—</span></div>
+    <div class="stat"><span class="st-lbl">Month Grid Cost</span><span class="st-val" id="f-mgridr" style="color:var(--red)">—</span></div>
+    <div class="stat" id="clock-wrap" onclick="toggleClock()" title="Click to toggle clock" style="cursor:pointer;margin-left:auto;padding-left:clamp(8px,2vw,32px);opacity:0.4;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=clockVisible?1:0.4">
+      <span class="st-lbl">Time</span>
+      <span class="st-val" id="clock" style="font-family:var(--mono);color:var(--muted);font-size:clamp(20px,2.4vw,40px);font-weight:600">--:--:--</span>
+    </div>
   </div>
+
+  <!-- ADVANCED MODE footer — two rows of stat pills -->
+  <div id="footer-adv" class="footer-hidden">
+    <!-- Row 1: Daily + monthly energy -->
+    <div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Self-Suff</span><span class="adv-footer-val" id="fa-ss">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">PV Today</span><span class="adv-footer-val" id="fa-pv" style="color:var(--solar)">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Load Today</span><span class="adv-footer-val" id="fa-tl">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Solar Savings</span><span class="adv-footer-val" id="fa-sv" style="color:var(--green)">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Grid Today</span><span class="adv-footer-val" id="fa-tg">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Month PV</span><span class="adv-footer-val" id="fa-mpv" style="color:var(--solar)">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Month PV Value</span><span class="adv-footer-val" id="fa-mpvr" style="color:var(--green)">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Month Grid</span><span class="adv-footer-val" id="fa-mgrid">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Month Grid Cost</span><span class="adv-footer-val" id="fa-mgridr" style="color:var(--red)">—</span></div>
+    </div>
+    <!-- Row 2: Technical + peaks -->
+    <div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Battery V</span><span class="adv-footer-val" id="fa-bv">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Batt Temp</span><span class="adv-footer-val" id="fa-bt">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Grid V</span><span class="adv-footer-val" id="fa-gv">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Frequency</span><span class="adv-footer-val" id="fa-hz">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Peak Solar</span><span class="adv-footer-val" id="fa-peak-pv" style="color:var(--solar)">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Peak Load</span><span class="adv-footer-val" id="fa-peak-load" style="color:var(--amber)">—</span></div>
+      <div class="adv-footer-stat"><span class="adv-footer-lbl">Peak Grid Draw</span><span class="adv-footer-val" id="fa-peak-grid" style="color:var(--red)">—</span></div>
+    </div>
+  </div>
+
 </footer>
 
 </div>
@@ -911,8 +997,10 @@ function onRateChange(){
 function updateFooterCosts(d){
   const load=d.daily_load_kwh||0, grid=d.daily_grid_kwh||0;
   const savings=Math.max(0, calcCost(load)-calcCost(grid));
-  document.getElementById('f-sv').textContent='R'+savings.toFixed(2);
-  document.getElementById('a-savings').textContent='R'+savings.toFixed(2);
+  const s='R'+savings.toFixed(2);
+  document.getElementById('f-sv').textContent=s;
+  document.getElementById('fa-sv').textContent=s;
+  document.getElementById('a-savings').textContent=s;
 }
 
 // ── VIEW MANAGEMENT ───────────────────────────────────────────────────────────
@@ -923,7 +1011,18 @@ function setView(v){
   document.getElementById('vbtn-basic').className='vbtn'+(v==='basic'?' active':'');
   document.getElementById('vbtn-adv').className='vbtn'+(v==='adv'?' active':'');
   document.getElementById('view-label').textContent=v==='basic'?'Power Flow':'Advanced';
-  if(v==='adv') loadCharts();
+  // Toggle footer mode
+  const fb=document.getElementById('footer-basic');
+  const fa=document.getElementById('footer-adv');
+  fb.classList.toggle('footer-hidden', v!=='basic');
+  fa.classList.toggle('footer-hidden', v!=='adv');
+  // Hide tech-stats strip in advanced view — those stats now live in the footer pills
+  const ts=document.getElementById('tech-stats');
+  if(ts) ts.style.display=v==='adv'?'none':'flex';
+  document.querySelector('.app').className='app'+(v==='adv'?' adv-mode':'');
+  // Toggle scroll mode for advanced view
+  document.documentElement.classList.toggle('adv-scroll', v==='adv');
+  if(v==='adv'){ window.scrollTo(0,0); loadCharts(); }
 }
 
 function toggleCycle(){
@@ -1048,18 +1147,34 @@ function render(d){
   document.getElementById('nd-load').style.borderColor=d.load_w>50?'rgba(79,195,247,.35)':'';
   document.getElementById('hring').className='hub-ring'+(d.solar_w>50?' on':'');
 
-  // Footer (monthly stats updated separately by refreshMonthly)
-  // Tech stats in advanced view
-  document.getElementById('a-bv').textContent=d.batt_v.toFixed(1)+'V';
-  document.getElementById('a-bt').textContent=d.batt_temp>5?d.batt_temp.toFixed(1)+'°C':'—';
-  document.getElementById('a-gv').textContent=d.grid_v.toFixed(0)+'V';
-  document.getElementById('a-hz').textContent=d.grid_hz.toFixed(2)+'Hz';
+  // Tech stats — basic tech strip + advanced footer pills
+  const bv=d.batt_v.toFixed(1)+'V';
+  const bt=d.batt_temp>5?d.batt_temp.toFixed(1)+'°C':'—';
+  const gv=d.grid_v.toFixed(0)+'V';
+  const hz=d.grid_hz.toFixed(2)+'Hz';
+  document.getElementById('a-bv').textContent=bv;
+  document.getElementById('a-bt').textContent=bt;
+  document.getElementById('a-gv').textContent=gv;
+  document.getElementById('a-hz').textContent=hz;
+  // Advanced footer pills — tech stats
+  document.getElementById('fa-bv').textContent=bv;
+  document.getElementById('fa-bt').textContent=bt;
+  document.getElementById('fa-gv').textContent=gv;
+  document.getElementById('fa-hz').textContent=hz;
   const ss=d.self_suff??0;
+  const ssColor=ss>80?'var(--green)':ss>50?'var(--amber)':'var(--red)';
+  // Basic footer
   const sse=document.getElementById('f-ss');
-  sse.textContent=ss+'%';sse.style.color=ss>80?'var(--green)':ss>50?'var(--amber)':'var(--red)';
+  sse.textContent=ss+'%';sse.style.color=ssColor;
   document.getElementById('f-pv').textContent=(d.daily_pv_kwh??0)+' kWh';
   document.getElementById('f-tl').textContent=(d.daily_load_kwh??0)+' kWh';
   document.getElementById('f-tg').textContent=(d.daily_grid_kwh??0)+' kWh';
+  // Advanced footer pills — daily stats
+  const fass=document.getElementById('fa-ss');
+  fass.textContent=ss+'%';fass.style.color=ssColor;
+  document.getElementById('fa-pv').textContent=(d.daily_pv_kwh??0)+' kWh';
+  document.getElementById('fa-tl').textContent=(d.daily_load_kwh??0)+' kWh';
+  document.getElementById('fa-tg').textContent=(d.daily_grid_kwh??0)+' kWh';
   updateFooterCosts(d);
 
   // Advanced stat pills (update even if not visible)
@@ -1078,22 +1193,40 @@ function render(d){
 // ── CHART HELPERS ─────────────────────────────────────────────────────────────
 function mkOpts(){
   const isMob=window.innerWidth<=768||( window.innerWidth<=1024&&window.innerHeight>window.innerWidth);
-  const lgnd={color:'#8e9bc0',font:{size:isMob?12:11,family:"'Barlow',sans-serif"},boxWidth:isMob?14:12,padding:isMob?12:10};
+  const lgnd={color:'#8e9bc0',font:{size:isMob?12:11,family:"'Barlow',sans-serif"},boxWidth:12,padding:isMob?8:10};
   return {
   responsive:true,maintainAspectRatio:false,
   animation:{duration:400},
-  plugins:{legend:{labels:lgnd},tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(17,19,24,.95)',titleColor:'#e8eaf2',bodyColor:'#8e9bc0',borderColor:'#232736',borderWidth:1}},
+  plugins:{
+    legend:{display:!isMob,labels:lgnd},
+    tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(17,19,24,.95)',titleColor:'#e8eaf2',bodyColor:'#8e9bc0',borderColor:'#232736',borderWidth:1},
+    crosshair:{} // registered above
+  },
   scales:{
     x:{type:'time',time:{tooltipFormat:'HH:mm',displayFormats:{minute:'HH:mm',hour:'HH:mm'}},ticks:{color:'#4a5070',font:{size:10},maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'}},
-    y:{ticks:{color:'#4a5070',font:{size:10},callback:v=>v.toLocaleString()},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'}}
+    y:{ticks:{color:'#4a5070',font:{size:10},callback:v=>v.toLocaleString()},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'},afterFit(scale){const m=window.innerWidth<=768||(window.innerWidth<=1024&&window.innerHeight>window.innerWidth);scale.width=m?46:58;}}
   }
-};}
+};
+  // Apply shared x-axis bounds if available — aligns all timeseries charts
+  if(window._chartBounds){
+    o.scales.x.min=window._chartBounds.min;
+    o.scales.x.max=window._chartBounds.max;
+  }
+  return o;
+}
 
 // Chart options for PV/Load charts that have a per-inverter + combined dataset.
 // The combined dataset is hidden from the tooltip — afterBody shows accurate sum
 // computed from the aligned per-inverter values instead.
+// Dummy right axis — forces single-axis charts to same plot width as dual-axis charts
+const DUMMY_RIGHT_AXIS={position:'right',display:true,grid:{display:false},border:{display:false},
+  ticks:{display:false,color:'transparent'},afterFit(scale){const m=window.innerWidth<=768||(window.innerWidth<=1024&&window.innerHeight>window.innerWidth);scale.width=m?36:46;}};
+
 function mkOptsCombined(){
   const base=mkOpts();
+  base.scales.y2=DUMMY_RIGHT_AXIS; // align with battery/grid dual-axis charts
+  const isMobC=window.innerWidth<=768||(window.innerWidth<=1024&&window.innerHeight>window.innerWidth);
+  if(isMobC) base.plugins.legend={display:false};
   base.plugins.tooltip.filter=function(item){
     // Exclude combined dataset from tooltip items
     return !item.dataset.label.includes('Combined');
@@ -1121,6 +1254,62 @@ function makeChart(id,cfg){
 function timeLabels(rows,col='time'){return rows.map(r=>new Date(r[col]))}
 
 // ── LOAD CHARTS ───────────────────────────────────────────────────────────────
+// ── CROSSHAIR — synced vertical line across all timeseries charts ────────────
+const crosshairPlugin={
+  id:'crosshair',
+  afterDraw(chart){
+    if(chart._crosshairX==null) return;
+    const {ctx,chartArea:{top,bottom}}=chart;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(chart._crosshairX, top);
+    ctx.lineTo(chart._crosshairX, bottom);
+    ctx.strokeStyle='rgba(255,255,255,0.3)';
+    ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+Chart.register(crosshairPlugin);
+
+// Sync crosshair across all timeseries charts
+function syncCrosshair(e, sourceChart){
+  const x = e.native ? e.native.offsetX : e.offsetX;
+  Object.values(charts).forEach(c=>{
+    if(c===sourceChart||!c.scales?.x) return;
+    // Map x coordinate proportionally
+    const src=sourceChart.chartArea, dst=c.chartArea;
+    const ratio=(x-src.left)/(src.right-src.left);
+    const dstX=dst.left+ratio*(dst.right-dst.left);
+    if(dstX>=dst.left&&dstX<=dst.right){
+      c._crosshairX=dstX;
+    } else {
+      c._crosshairX=null;
+    }
+    c.draw();
+  });
+}
+
+function clearCrosshair(){
+  Object.values(charts).forEach(c=>{c._crosshairX=null;c.draw&&c.draw();});
+}
+
+// Wire crosshair to chart containers via event delegation
+document.addEventListener('mousemove', e=>{
+  const canvas=e.target.closest('canvas');
+  if(!canvas) return;
+  const chartId=canvas.id;
+  const chart=charts[chartId];
+  if(!chart||!chart.scales?.x) return;
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left;
+  chart._crosshairX=x;
+  chart.draw();
+  syncCrosshair({native:{offsetX:x}}, chart);
+});
+document.addEventListener('mouseleave', clearCrosshair, true);
+
 async function loadCharts(){
   if(!currentSite)return;
   const site=encodeURIComponent(currentSite);
@@ -1134,6 +1323,14 @@ async function loadCharts(){
     get(`/api/chart/temps?site=${site}`),
     get(`/api/chart/peaks?site=${site}`),
   ]);
+
+  // Compute shared x-axis bounds from all time-series datasets so all
+  // timeseries charts line up exactly for easy visual comparison
+  window._chartBounds = computeChartBounds([
+    pvR?.per_inv, battR?.power, battR?.soc, gridR?.power, gridR?.voltage,
+    loadR?.per_inv, tempR
+  ]);
+
   if(pvR)   buildPVChart(pvR);
   if(loadR) buildLoadChart(loadR);
   if(battR) buildBattChart(battR);
@@ -1141,6 +1338,19 @@ async function loadCharts(){
   if(dailyR)buildDailyChart(dailyR);
   if(tempR) buildTempChart(tempR);
   if(peakR) buildPeaks(peakR);
+}
+
+function computeChartBounds(datasets){
+  let min=Infinity, max=-Infinity;
+  (datasets||[]).forEach(ds=>{
+    (ds||[]).forEach(r=>{
+      const t=new Date(r.time||r.minute).getTime();
+      if(t<min) min=t;
+      if(t>max) max=t;
+    });
+  });
+  if(min===Infinity) return null;
+  return {min:new Date(min), max:new Date(max)};
 }
 
 function buildPVChart(data){
@@ -1158,7 +1368,7 @@ function buildPVChart(data){
     datasets.push({
       label:'Combined Total (W)',
       data:data.combined.map(r=>({x:new Date(r.time),y:parseFloat(r.combined_w)||0})),
-      borderColor:'rgba(255,255,255,0.35)',backgroundColor:'transparent',
+      borderColor:'rgba(255,255,255,0.65)',backgroundColor:'transparent',
       fill:false,tension:.2,borderWidth:2,pointRadius:0,
       tooltip:{enabled:false}, // hide from tooltip — use afterBody computed sum
     });
@@ -1181,7 +1391,7 @@ function buildLoadChart(data){
     datasets.push({
       label:'Combined Load (W)',
       data:data.combined.map(r=>({x:new Date(r.time),y:parseFloat(r.combined_w)||0})),
-      borderColor:'rgba(255,255,255,0.35)',backgroundColor:'transparent',
+      borderColor:'rgba(255,255,255,0.65)',backgroundColor:'transparent',
       fill:false,tension:.2,borderWidth:2,pointRadius:0,
       tooltip:{enabled:false}, // hide from tooltip — use afterBody computed sum
     });
@@ -1190,23 +1400,71 @@ function buildLoadChart(data){
 }
 
 function buildBattChart(data){
-  const opts=mkOpts();
-  opts.scales.y1={position:'right',ticks:{color:'#2ecc71',font:{size:10},callback:v=>v+'%'},grid:{display:false},border:{color:'rgba(255,255,255,.06)'},min:0,max:100};
+  // Build options first — single object, no redundant first opts
+  const battOpts=mkOpts();
+  battOpts.scales.y1={position:'right',min:0,max:100,
+    ticks:{color:'#2ecc71',font:{size:10},maxTicksLimit:5,callback:v=>v+'%'},
+    grid:{display:false},border:{color:'rgba(255,255,255,.06)'},
+    afterFit(scale){const m=window.innerWidth<=768||(window.innerWidth<=1024&&window.innerHeight>window.innerWidth);scale.width=m?36:46;}
+  };
+  // Zero reference line — charging above, discharging below
+  battOpts.plugins.annotation={annotations:{
+    zeroLine:{type:'line',yMin:0,yMax:0,yScaleID:'y',
+      borderColor:'rgba(255,255,255,.3)',borderWidth:1,borderDash:[3,3]},
+    zeroLbl:{type:'label',xValue:null,yValue:0,yScaleID:'y',
+      content:['0W'],color:'rgba(255,255,255,.3)',font:{size:9}}
+  }};
+  // Battery power: SQL returns discharging as positive (×-1 in SQL)
+  // We flip sign again so: positive = charging (↑), negative = discharging (↓)
+  const battData=(data.power||[]).map(r=>({x:new Date(r.time),y:-(parseFloat(r.batt_w)||0)}));
   const datasets=[
-    {label:'Battery Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:parseFloat(r.batt_w)||0}))||[],
-     borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,.10)',fill:true,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
-    {label:'SOC (%)',data:data.soc?.map(r=>({x:new Date(r.time),y:parseFloat(r.soc)||0}))||[],
-     borderColor:'#2ecc71',backgroundColor:'transparent',fill:false,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y1'},
+    {label:'Battery Power (W)',data:battData,
+     borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,.10)',
+     fill:true,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
+    {label:'SOC (%)',data:(data.soc||[]).map(r=>({x:new Date(r.time),y:parseFloat(r.soc)||0})),
+     borderColor:'#2ecc71',backgroundColor:'transparent',
+     fill:false,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y1'},
   ];
-  makeChart('ch-batt',{type:'line',data:{datasets},options:opts});
+  // Custom tooltip: show Charging/Discharging label with positive watts
+  battOpts.plugins.tooltip.callbacks={
+    label:function(item){
+      if(item.dataset.label.includes('SOC')) return ' SOC: '+item.parsed.y.toFixed(1)+'%';
+      const w=item.parsed.y;
+      const abs=Math.abs(w);
+      const label=w>15?'Charging':w<-15?'Discharging':'Idle';
+      const disp=abs>=1000?(abs/1000).toFixed(1)+' kW':Math.round(abs)+' W';
+      return ' Battery: '+disp+' ('+label+')';
+    }
+  };
+  // Symmetric y-axis so charging and discharging get equal visual space
+  const powerVals=battData.map(p=>p.y).filter(v=>v!==0);
+  if(powerVals.length){
+    const maxAbs=Math.ceil(Math.max(...powerVals.map(Math.abs))/500)*500;
+    battOpts.scales.y.min=-maxAbs;
+    battOpts.scales.y.max=maxAbs;
+  }
+  makeChart('ch-batt',{type:'line',data:{datasets},options:battOpts});
 }
 
 function buildGridChart(data){
   const opts=mkOpts();
-  opts.scales.y1={position:'right',ticks:{color:'#4fc3f7',font:{size:10},callback:v=>v+'V'},grid:{display:false},border:{color:'rgba(255,255,255,.06)'}};
+  // Compute tight voltage range from actual data
+  const voltages=(data.voltage||[]).map(r=>parseFloat(r.grid_v)||0).filter(v=>v>100);
+  const vMin=voltages.length?Math.floor(Math.min(...voltages)/5)*5-10:215;
+  const vMax=voltages.length?Math.ceil(Math.max(...voltages)/5)*5+5:260;
+  opts.scales.y1={position:'right',min:vMin,max:vMax,
+    ticks:{color:'#4fc3f7',font:{size:10},maxTicksLimit:6,callback:v=>v+'V'},
+    grid:{display:false},border:{color:'rgba(255,255,255,.06)'},
+    afterFit(scale){const m=window.innerWidth<=768||(window.innerWidth<=1024&&window.innerHeight>window.innerWidth);scale.width=m?36:46;}
+  };
   const datasets=[
     {label:'Grid Power (W)',data:data.power?.map(r=>({x:new Date(r.time),y:parseFloat(r.grid_w)||0}))||[],
-     borderColor:'#FADE2A',backgroundColor:'rgba(250,222,42,.10)',fill:true,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
+     borderColor:'#FADE2A',
+     segment:{
+       borderColor:ctx=>ctx.p1.parsed.y<0?'#2ecc71':'#FADE2A',
+       backgroundColor:ctx=>ctx.p1.parsed.y<0?'rgba(46,204,113,.10)':'rgba(250,222,42,.10)'
+     },
+     fill:false,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y'},
     {label:'Grid Voltage (V)',data:data.voltage?.map(r=>({x:new Date(r.time),y:parseFloat(r.grid_v)||0}))||[],
      borderColor:'#4fc3f7',backgroundColor:'transparent',fill:false,tension:.2,borderWidth:1.5,pointRadius:0,yAxisID:'y1'},
   ];
@@ -1214,18 +1472,43 @@ function buildGridChart(data){
 }
 
 function buildDailyChart(data){
-  const labels=data.map(r=>r.day);
+  // On mobile show 7 days, desktop 14 days — prevents bars becoming too thin
+  const isMobD=window.innerWidth<=768||(window.innerWidth<=1024&&window.innerHeight>window.innerWidth);
+  const displayData=isMobD?data.slice(-7):data;
+  const labels=displayData.map(r=>r.day);
+  const today=new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Johannesburg'});
   const colors={pv:'#FADE2A',load:'#e74c3c',grid:'#4fc3f7',chg:'#f5a623',dis:'#2ecc71'};
+  // Today's bars at 60% opacity — day not complete yet
+  const mkColor=(hex,idx)=>hex+(labels[idx]===today?'99':'ff');
   const datasets=[
-    {label:'PV Generated',data:data.map(r=>parseFloat(r.pv)||0),backgroundColor:colors.pv,barPercentage:.7},
-    {label:'Load Consumed',data:data.map(r=>parseFloat(r.load)||0),backgroundColor:colors.load,barPercentage:.7},
-    {label:'Grid Import',data:data.map(r=>parseFloat(r.grid)||0),backgroundColor:colors.grid,barPercentage:.7},
-    {label:'Batt Charge',data:data.map(r=>parseFloat(r.chg)||0),backgroundColor:colors.chg,barPercentage:.7},
-    {label:'Batt Discharge',data:data.map(r=>parseFloat(r.dis)||0),backgroundColor:colors.dis,barPercentage:.7},
+    {label:'PV Generated',   data:displayData.map(r=>parseFloat(r.pv)||0),  backgroundColor:labels.map((_,i)=>mkColor(colors.pv,i)),   barPercentage:.85},
+    {label:'Load Consumed',  data:displayData.map(r=>parseFloat(r.load)||0), backgroundColor:labels.map((_,i)=>mkColor(colors.load,i)), barPercentage:.7},
+    {label:'Grid Import',    data:displayData.map(r=>parseFloat(r.grid)||0), backgroundColor:labels.map((_,i)=>mkColor(colors.grid,i)), barPercentage:.7},
+    {label:'Batt Charge',    data:displayData.map(r=>parseFloat(r.chg)||0),  backgroundColor:labels.map((_,i)=>mkColor(colors.chg,i)),  barPercentage:.7},
+    {label:'Batt Discharge', data:displayData.map(r=>parseFloat(r.dis)||0),  backgroundColor:labels.map((_,i)=>mkColor(colors.dis,i)),  barPercentage:.7},
   ];
   const opts=mkOpts();
-  opts.scales.x={type:'category',ticks:{color:'#4a5070',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'}};
+  // On mobile show short dates: 'Apr 11' instead of '2026-04-11'
+  const isMobChart=window.innerWidth<=768||(window.innerWidth<=1024&&window.innerHeight>window.innerWidth);
+  const shortLabels=isMobChart?labels.map(d=>{
+    const dt=new Date(d+'T12:00:00');
+    return dt.toLocaleDateString('en-ZA',{month:'short',day:'numeric',timeZone:'Africa/Johannesburg'});
+  }):labels;
+  opts.scales.x={type:'category',
+    labels:shortLabels,
+    ticks:{color:'#4a5070',font:{size:isMobChart?9:10},maxRotation:isMobChart?45:0},
+    grid:{color:'rgba(255,255,255,.04)'},border:{color:'rgba(255,255,255,.06)'}};
   opts.scales.y.ticks.callback=v=>v+' kWh';
+  // "In progress" label on today's bar
+  const todayIdx=labels.indexOf(today);
+  if(todayIdx>=0){
+    if(!opts.plugins) opts.plugins={};
+    opts.plugins.annotation={annotations:{todayLbl:{
+      type:'label',xValue:todayIdx,
+      content:['in progress'],color:'rgba(255,255,255,.4)',
+      font:{size:9,style:'italic'},yAdjust:-14
+    }}};
+  }
   makeChart('ch-daily',{type:'bar',data:{labels,datasets},options:opts});
 }
 
@@ -1241,15 +1524,22 @@ function buildTempChart(data){
   });
   const opts=mkOpts();
   opts.scales.y.ticks.callback=v=>v+'°C';
+  opts.scales.y2=DUMMY_RIGHT_AXIS; // align with battery/grid charts
   makeChart('ch-temp',{type:'line',data:{datasets},options:opts});
 }
 
 function buildPeaks(data){
   // PostgreSQL NUMERIC comes back as strings — parseFloat before any arithmetic
   const fmtW=w=>{const n=parseFloat(w)||0;return n>=1000?(n/1000).toFixed(1)+' kW':Math.round(n)+' W';};
-  document.getElementById('a-peak-pv').textContent=fmtW(data.peak_pv);
-  document.getElementById('a-peak-load').textContent=fmtW(data.peak_load);
-  if(data.peak_grid!=null) document.getElementById('a-peak-grid').textContent=fmtW(data.peak_grid);
+  const pv=fmtW(data.peak_pv), load=fmtW(data.peak_load), grid=fmtW(data.peak_grid);
+  // Top stat pills
+  document.getElementById('a-peak-pv').textContent=pv;
+  document.getElementById('a-peak-load').textContent=load;
+  if(data.peak_grid!=null) document.getElementById('a-peak-grid').textContent=grid;
+  // Footer row 2 peaks
+  document.getElementById('fa-peak-pv').textContent=pv;
+  document.getElementById('fa-peak-load').textContent=load;
+  if(data.peak_grid!=null) document.getElementById('fa-peak-grid').textContent=grid;
 }
 
 function groupBy(arr,key){
@@ -1283,6 +1573,11 @@ function renderMonthly(d){
   document.getElementById('f-mgrid').textContent  = grid.toFixed(1)  + ' kWh';
   document.getElementById('f-mpvr').textContent   = 'R' + pvVal.toFixed(2);
   document.getElementById('f-mgridr').textContent = 'R' + gridCost.toFixed(2);
+  // Also update advanced footer pills
+  document.getElementById('fa-mpv').textContent   = pv.toFixed(1)   + ' kWh';
+  document.getElementById('fa-mgrid').textContent  = grid.toFixed(1)  + ' kWh';
+  document.getElementById('fa-mpvr').textContent   = 'R' + pvVal.toFixed(2);
+  document.getElementById('fa-mgridr').textContent = 'R' + gridCost.toFixed(2);
 }
 
 // ── TEMP CHART TOGGLE ────────────────────────────────────────────────────────
@@ -1463,7 +1758,8 @@ def get_chart(chart: str, site: str) -> dict:
               inverter_name,
               AVG(pv1_power + COALESCE(pv2_power,0)) as pv_w
             FROM solar_readings
-            WHERE time >= NOW() - INTERVAL '24 hours'
+            WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                          AT TIME ZONE 'Africa/Johannesburg'
             AND site_name ILIKE %s
             GROUP BY 1, 2 ORDER BY 1
         """, (S,))
@@ -1473,7 +1769,8 @@ def get_chart(chart: str, site: str) -> dict:
               SELECT DATE_TRUNC('minute', time) as minute,
                 inverter_name, AVG(pv1_power + COALESCE(pv2_power,0)) as avg_pv
               FROM solar_readings
-              WHERE time >= NOW() - INTERVAL '24 hours'
+              WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                            AT TIME ZONE 'Africa/Johannesburg'
               AND site_name ILIKE %s GROUP BY 1, 2
             ) sub GROUP BY minute ORDER BY minute
         """, (S,))
@@ -1484,7 +1781,8 @@ def get_chart(chart: str, site: str) -> dict:
             SELECT DATE_TRUNC('minute', time) as time,
               inverter_name, AVG(load_power) as load_w
             FROM solar_readings
-            WHERE time >= NOW() - INTERVAL '24 hours'
+            WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                          AT TIME ZONE 'Africa/Johannesburg'
             AND site_name ILIKE %s
             GROUP BY 1, 2 ORDER BY 1
         """, (S,))
@@ -1494,7 +1792,8 @@ def get_chart(chart: str, site: str) -> dict:
               SELECT DATE_TRUNC('minute', time) as minute,
                 inverter_name, AVG(load_power) as avg_load
               FROM solar_readings
-              WHERE time >= NOW() - INTERVAL '24 hours'
+              WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                            AT TIME ZONE 'Africa/Johannesburg'
               AND site_name ILIKE %s GROUP BY 1, 2
             ) sub GROUP BY minute ORDER BY minute
         """, (S,))
@@ -1502,12 +1801,13 @@ def get_chart(chart: str, site: str) -> dict:
 
     elif chart == 'battery':
         power = query_all("""
-            SELECT minute as time, SUM(avg_batt) * -1 as batt_w
+            SELECT minute as time, SUM(avg_batt) as batt_w
             FROM (
               SELECT DATE_TRUNC('minute', time) as minute,
                 inverter_name, AVG(battery_power) as avg_batt
               FROM solar_readings
-              WHERE time >= NOW() - INTERVAL '24 hours'
+              WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                            AT TIME ZONE 'Africa/Johannesburg'
               AND site_name ILIKE %s GROUP BY 1, 2
             ) sub GROUP BY minute ORDER BY minute
         """, (S,))
@@ -1515,7 +1815,8 @@ def get_chart(chart: str, site: str) -> dict:
             SELECT DATE_TRUNC('minute', time) as time,
               AVG(battery_soc) as soc
             FROM solar_readings
-            WHERE time >= NOW() - INTERVAL '24 hours'
+            WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                          AT TIME ZONE 'Africa/Johannesburg'
             AND site_name ILIKE %s AND battery_soc IS NOT NULL
             GROUP BY 1 ORDER BY 1
         """, (S,))
@@ -1528,7 +1829,8 @@ def get_chart(chart: str, site: str) -> dict:
               SELECT DATE_TRUNC('minute', time) as minute,
                 inverter_name, AVG(grid_power) as avg_grid
               FROM solar_readings
-              WHERE time >= NOW() - INTERVAL '24 hours'
+              WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                            AT TIME ZONE 'Africa/Johannesburg'
               AND site_name ILIKE %s GROUP BY 1, 2
             ) sub GROUP BY minute ORDER BY minute
         """, (S,))
@@ -1536,7 +1838,8 @@ def get_chart(chart: str, site: str) -> dict:
             SELECT DATE_TRUNC('minute', time) as time,
               AVG(grid_voltage) as grid_v
             FROM solar_readings
-            WHERE time >= NOW() - INTERVAL '24 hours'
+            WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                          AT TIME ZONE 'Africa/Johannesburg'
             AND site_name ILIKE %s AND grid_voltage IS NOT NULL
             GROUP BY 1 ORDER BY 1
         """, (S,))
@@ -1574,7 +1877,8 @@ def get_chart(chart: str, site: str) -> dict:
               AVG(CASE WHEN dc_temp < 100 THEN dc_temp END) as dc_temp,
               AVG(CASE WHEN battery_temp > 0 THEN battery_temp END) as batt_temp
             FROM solar_readings
-            WHERE time >= NOW() - INTERVAL '24 hours'
+            WHERE time >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Johannesburg')
+                          AT TIME ZONE 'Africa/Johannesburg'
             AND site_name ILIKE %s
             GROUP BY 1, 2 ORDER BY 1
         """, (S,))
