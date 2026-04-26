@@ -690,12 +690,12 @@ footer{
   .adv-inner .chart-panel{
     min-height:220px;
   }
-  /* Stat rows on mobile */
-  .adv-row-a{height:auto;flex-wrap:wrap}
+  /* Stat rows on mobile — 5 equal columns in one row, no gap */
+  .adv-row-a{height:min(13vh,90px);flex-wrap:nowrap}
   .adv-row-b{display:none!important} /* peaks shown in footer row 2 instead */
-  .adv-row-a .adv-stat{flex:0 0 33.333%;min-width:0;padding:5px 3px;border-bottom:1px solid var(--border)}
-  .adv-row-a .adv-stat-lbl{font-size:8px}
-  .adv-row-a .adv-stat-val{font-size:clamp(13px,4vw,20px)}
+  .adv-row-a .adv-stat{flex:1 1 0;min-width:0;padding:4px 2px}
+  .adv-row-a .adv-stat-lbl{font-size:clamp(6px,1.9vw,9px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px}
+  .adv-row-a .adv-stat-val{font-size:clamp(11px,3.8vw,18px);white-space:nowrap}
 }
 
 /* Extra-small phones (≤380px) — tighten further */
