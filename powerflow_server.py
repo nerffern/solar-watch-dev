@@ -416,15 +416,28 @@ select{
 .chart-wrap{flex:1;position:relative;min-height:0;height:0}
 .chart-wrap canvas{width:100%!important;height:100%!important}
 
-/* Stat panels in advanced view */
+/* Stat panels in advanced view — two rows */
 .adv-stats{
-  grid-column:1/-1;display:flex;gap:1px;background:var(--border);
-  height:min(14vh,110px);flex-shrink:0;flex-wrap:wrap;
+  grid-column:1/-1;display:flex;flex-direction:column;
+  flex-shrink:0;
+}
+.adv-row-a{
+  display:flex;gap:1px;background:var(--border);
+  height:min(12vh,100px);flex-shrink:0;
+}
+.adv-row-b{
+  display:flex;gap:1px;background:var(--border);
+  height:min(5.5vh,50px);flex-shrink:0;
+  border-top:2px solid var(--bg);
 }
 .adv-stat{
   flex:1;background:var(--surface);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:4px;
+  align-items:center;justify-content:center;gap:3px;min-width:0;
 }
+.adv-row-a .adv-stat-lbl{font-size:clamp(8px,.75vw,11px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.adv-row-a .adv-stat-val{font-size:clamp(16px,2.2vw,36px);font-family:var(--mono);font-weight:700}
+.adv-row-b .adv-stat-lbl{font-size:clamp(7px,.6vw,10px);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.adv-row-b .adv-stat-val{font-size:clamp(12px,1.1vw,18px);font-family:var(--mono);font-weight:600;color:var(--text)}
 .adv-stat-lbl{font-size:clamp(9px,.8vw,12px);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
 .adv-stat-val{font-size:clamp(18px,2.5vw,40px);font-family:var(--mono);font-weight:700}
 
@@ -623,7 +636,7 @@ footer{
   #footer-basic .stat:nth-child(8){order:8}
   #footer-basic .stat:nth-child(9){order:9}
   #footer-basic #clock-wrap{display:none}
-  /* Advanced footer on mobile — row 1: 4-column grid, row 2: hidden */
+  /* Advanced footer on mobile — row 1: 4-column grid, row 2: peaks only */
   #footer-adv{flex-direction:column!important}
   #footer-adv > div:first-child{
     display:grid!important;
@@ -631,11 +644,20 @@ footer{
     gap:1px;background:var(--border);
     flex:none!important;
   }
-  /* Hide month grid cost on mobile — saves a row */
-  #footer-adv #fa-mgridr,#footer-adv #fa-mgridr+span,
-  #footer-adv [id="fa-mgridr"]~*{display:none}
+  /* Row 2: show but hide tech stats (Battery V, Batt Temp, Grid V, Freq) — keep peaks */
+  #footer-adv > div:last-child{
+    display:grid!important;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;background:var(--border);
+    flex:none!important;
+  }
+  /* Hide first 4 items in row 2 (tech stats) — keep last 3 (peaks) */
+  #footer-adv > div:last-child > div:nth-child(1),
+  #footer-adv > div:last-child > div:nth-child(2),
+  #footer-adv > div:last-child > div:nth-child(3),
+  #footer-adv > div:last-child > div:nth-child(4){display:none!important}
+  /* Hide month grid cost in row 1 to keep 4-col clean */
   #footer-adv > div:first-child > div:last-child{display:none!important}
-  #footer-adv > div:last-child{display:none!important} /* hide tech+peaks — already in top pills */
   #footer-adv .adv-footer-stat{padding:4px 2px}
   #footer-adv .adv-footer-val{font-size:clamp(10px,3.5vw,16px)}
   #footer-adv .adv-footer-lbl{font-size:clamp(6px,1.8vw,9px)}
@@ -668,22 +690,12 @@ footer{
   .adv-inner .chart-panel{
     min-height:220px;
   }
-  /* Stat pills: 3 across instead of 6 */
-  .adv-stats{
-    height:auto;
-    flex-wrap:wrap;
-    padding:4px 0;
-  }
-  .adv-stat{
-    flex:0 0 33.333%;
-    min-width:0;
-    padding:6px 4px;
-    border-bottom:1px solid var(--border);
-  }
-  .adv-order-1{order:1}.adv-order-2{order:2}.adv-order-3{order:3}
-  .adv-order-4{order:4}.adv-order-5{order:5}.adv-order-6{order:6}.adv-order-7{order:7}
-  .adv-stat-lbl{font-size:8px}
-  .adv-stat-val{font-size:clamp(14px,4vw,22px)}
+  /* Stat rows on mobile */
+  .adv-row-a{height:auto;flex-wrap:wrap}
+  .adv-row-b{display:none!important} /* peaks shown in footer row 2 instead */
+  .adv-row-a .adv-stat{flex:0 0 33.333%;min-width:0;padding:5px 3px;border-bottom:1px solid var(--border)}
+  .adv-row-a .adv-stat-lbl{font-size:8px}
+  .adv-row-a .adv-stat-val{font-size:clamp(13px,4vw,20px)}
 }
 
 /* Extra-small phones (≤380px) — tighten further */
@@ -868,22 +880,26 @@ footer{
 
   <!-- ADVANCED VIEW -->
   <div class="view" id="view-adv">
-    <!-- Top stat pills -->
+    <!-- Top stat pills: two rows -->
     <div class="adv-stats" id="adv-stats">
-      <div class="adv-stat adv-order-1"><span class="adv-stat-lbl">Battery SOC</span><span class="adv-stat-val" id="a-soc" style="color:var(--green)">—</span></div>
-      <div class="adv-stat adv-order-2"><span class="adv-stat-lbl">Self-Suff</span><span class="adv-stat-val" id="a-ss">—</span></div>
-      <div class="adv-stat adv-order-3"><span class="adv-stat-lbl">PV Today</span><span class="adv-stat-val" id="a-pv-today" style="color:var(--solar)">—</span></div>
-      <div class="adv-stat adv-order-4"><span class="adv-stat-lbl">Solar Savings</span><span class="adv-stat-val" id="a-savings" style="color:var(--green)">—</span></div>
-      <div class="adv-stat adv-order-5"><span class="adv-stat-lbl">Peak Solar Today</span><span class="adv-stat-val" id="a-peak-pv" style="color:var(--solar)">—</span></div>
-      <div class="adv-stat adv-order-6"><span class="adv-stat-lbl">Peak Load Today</span><span class="adv-stat-val" id="a-peak-load" style="color:var(--amber)">—</span></div>
-      <div class="adv-stat adv-order-7"><span class="adv-stat-lbl">Peak Grid Draw</span><span class="adv-stat-val" id="a-peak-grid" style="color:var(--red)">—</span></div>
-    </div>
-    <!-- Technical stats strip — shown in advanced view only -->
-    <div class="tech-stats" id="tech-stats">
-      <div class="tech-stat"><span class="tech-lbl">Battery V</span><span class="tech-val" id="a-bv">—</span></div>
-      <div class="tech-stat"><span class="tech-lbl">Batt Temp</span><span class="tech-val" id="a-bt">—</span></div>
-      <div class="tech-stat"><span class="tech-lbl">Grid V</span><span class="tech-val" id="a-gv">—</span></div>
-      <div class="tech-stat"><span class="tech-lbl">Frequency</span><span class="tech-val" id="a-hz">—</span></div>
+      <!-- Row A: Operational -->
+      <div class="adv-row-a">
+        <div class="adv-stat"><span class="adv-stat-lbl">Battery SOC</span><span class="adv-stat-val" id="a-soc" style="color:var(--green)">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Self-Suff</span><span class="adv-stat-val" id="a-ss">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">PV Today</span><span class="adv-stat-val" id="a-pv-today" style="color:var(--solar)">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Solar Savings</span><span class="adv-stat-val" id="a-savings" style="color:var(--green)">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Grid Today</span><span class="adv-stat-val" id="a-grid-today" style="color:var(--muted)">—</span></div>
+      </div>
+      <!-- Row B: Diagnostic + peaks -->
+      <div class="adv-row-b" id="tech-stats">
+        <div class="adv-stat"><span class="adv-stat-lbl">Battery V</span><span class="adv-stat-val" id="a-bv">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Batt Temp</span><span class="adv-stat-val" id="a-bt">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Grid V</span><span class="adv-stat-val" id="a-gv">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Frequency</span><span class="adv-stat-val" id="a-hz">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Peak Solar</span><span class="adv-stat-val" id="a-peak-pv" style="color:var(--solar)">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Peak Load</span><span class="adv-stat-val" id="a-peak-load" style="color:var(--amber)">—</span></div>
+        <div class="adv-stat"><span class="adv-stat-lbl">Peak Grid Draw</span><span class="adv-stat-val" id="a-peak-grid" style="color:var(--red)">—</span></div>
+      </div>
     </div>
     <!-- Chart grid -->
     <div class="adv-inner" id="adv-inner">
@@ -1183,6 +1199,7 @@ function render(d){
   document.getElementById('a-pv-today').textContent=(d.daily_pv_kwh??0)+' kWh';
   document.getElementById('a-ss').textContent=ss+'%';
   document.getElementById('a-ss').style.color=ss>80?'var(--green)':ss>50?'var(--amber)':'var(--red)';
+  document.getElementById('a-grid-today').textContent=(d.daily_grid_kwh??0)+' kWh';
 
   document.getElementById('dot').className='dot'+(d.stale?' stale':'');
   document.getElementById('age').textContent=d.age_s!==null?d.age_s+'s ago':'live';
