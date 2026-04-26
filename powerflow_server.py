@@ -690,12 +690,12 @@ footer{
   .adv-inner .chart-panel{
     min-height:220px;
   }
-  /* Stat rows on mobile — 5 equal columns in one row, no gap */
-  .adv-row-a{height:min(13vh,90px);flex-wrap:nowrap}
+  /* Stat rows on mobile */
+  .adv-row-a{height:auto;flex-wrap:wrap}
   .adv-row-b{display:none!important} /* peaks shown in footer row 2 instead */
-  .adv-row-a .adv-stat{flex:1 1 0;min-width:0;padding:4px 2px}
-  .adv-row-a .adv-stat-lbl{font-size:clamp(6px,1.9vw,9px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px}
-  .adv-row-a .adv-stat-val{font-size:clamp(11px,3.8vw,18px);white-space:nowrap}
+  .adv-row-a .adv-stat{flex:0 0 33.333%;min-width:0;padding:5px 3px;border-bottom:1px solid var(--border)}
+  .adv-row-a .adv-stat-lbl{font-size:8px}
+  .adv-row-a .adv-stat-val{font-size:clamp(13px,4vw,20px)}
 }
 
 /* Extra-small phones (≤380px) — tighten further */
@@ -1698,16 +1698,36 @@ async function refresh(){
   liveTimer=setTimeout(refresh,10000);
 }
 
+// Update URL ?site= param without page reload — enables bookmarking
+function updateURL(siteName){
+  const url=new URL(window.location.href);
+  url.searchParams.set('site',siteName);
+  window.history.replaceState({},'',url.toString());
+}
+
 async function loadSites(){
   const r=await fetch('/api/sites');
   const sites=await r.json();
   const sel=document.getElementById('site-sel');
   sel.innerHTML=sites.map(s=>`<option value="${s.name}">${s.display}</option>`).join('');
-  if(sites.length){currentSite=sites[0].name;refresh();refreshWeather();refreshMonthly();}
+  if(!sites.length) return;
+
+  // Priority: 1) ?site= URL param  2) localStorage  3) first site
+  const urlParam=new URLSearchParams(window.location.search).get('site');
+  const stored=localStorage.getItem('sw_site');
+  const preferred=urlParam||stored||null;
+  const match=preferred?sites.find(s=>s.name.toLowerCase()===preferred.toLowerCase()):null;
+  currentSite=(match?match.name:sites[0].name);
+  sel.value=currentSite;
+  localStorage.setItem('sw_site',currentSite);
+  if(urlParam) updateURL(currentSite);
+  refresh();refreshWeather();refreshMonthly();
 }
 
 function onSiteChange(){
   currentSite=document.getElementById('site-sel').value;
+  localStorage.setItem('sw_site',currentSite);
+  updateURL(currentSite);
   if(liveTimer)clearTimeout(liveTimer);
   if(wxTimer)clearTimeout(wxTimer);
   // Reset weather strip to loading state for new site
