@@ -1,0 +1,41 @@
+{
+  "name": "SolarWatch",
+  "short_name": "SolarWatch",
+  "description": "Live solar inverter monitoring — power flow, battery SOC, grid and weather",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0c10",
+  "theme_color": "#0a0c10",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "/static/icons/icon-72x72.png",   "sizes": "72x72",   "type": "image/png" },
+    { "src": "/static/icons/icon-96x96.png",   "sizes": "96x96",   "type": "image/png" },
+    { "src": "/static/icons/icon-128x128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/static/icons/icon-144x144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/static/icons/icon-152x152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "/static/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-384x384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "/static/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Power Flow",
+      "short_name": "Flow",
+      "description": "Live power flow dashboard",
+      "url": "/?view=basic",
+      "icons": [{ "src": "/static/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Advanced Charts",
+      "short_name": "Charts",
+      "description": "Detailed energy charts",
+      "url": "/?view=adv",
+      "icons": [{ "src": "/static/icons/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}

@@ -41,7 +41,8 @@ from typing import Any
 import asyncpg
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import uvicorn
 
@@ -574,6 +575,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SolarWatch", lifespan=lifespan, docs_url=None, redoc_url=None)
 
+# Serve static assets — icons, manifest, service worker
+_STATIC_DIR = Path(__file__).parent / 'static'
+if _STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+
 
 # ── ROUTES ────────────────────────────────────────────────────────────────────
 
@@ -593,6 +599,30 @@ async def health():
     except Exception as e:
         log.error(f"Health check failed: {e}")
         return JSONResponse({"status": "degraded", "db": str(e)}, status_code=503)
+
+
+@app.get("/manifest.json", include_in_schema=False)
+async def manifest():
+    """Web App Manifest for PWA install."""
+    p = Path(__file__).parent / 'static' / 'manifest.json'
+    return FileResponse(str(p), media_type='application/manifest+json')
+
+
+@app.get("/sw.js", include_in_schema=False)
+async def service_worker():
+    """Service worker — must be served from root scope."""
+    p = Path(__file__).parent / 'static' / 'sw.js'
+    resp = FileResponse(str(p), media_type='application/javascript')
+    # No caching — browser must always get the latest SW
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    resp.headers['Service-Worker-Allowed'] = '/'
+    return resp
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    p = Path(__file__).parent / 'static' / 'icons' / 'favicon-32x32.png'
+    return FileResponse(str(p), media_type='image/png')
 
 
 @app.get("/api/sites")

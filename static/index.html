@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SolarWatch">
+<meta name="theme-color" content="#0a0c10">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
 <title>SolarWatch</title>
 <meta name="description" content="Multi-site solar inverter monitoring — live power flow, battery SOC, grid and load data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -475,9 +484,32 @@ footer{
   padding:2px 6px;border-radius:4px;pointer-events:none;
   transform:translateX(-50%);white-space:nowrap;z-index:100;
 }
+
+/* ── OFFLINE BANNER ── */
+#offline-banner{
+  position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:10px 16px;
+  background:rgba(231,76,60,.95);color:#fff;
+  font-family:var(--sans);font-size:clamp(12px,1.2vw,14px);font-weight:600;
+  letter-spacing:.04em;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
+  backdrop-filter:blur(4px);
+}
+#offline-banner.visible{transform:translateY(0)}
+#offline-banner .ob-dot{
+  width:8px;height:8px;border-radius:50%;background:#fff;
+  animation:pulse 1.5s infinite;flex-shrink:0;
+}
 </style>
 </head>
 <body>
+<!-- Offline banner — shown/hidden by service worker messages -->
+<div id="offline-banner" role="alert" aria-live="polite">
+  <div class="ob-dot"></div>
+  <span>You're offline — showing last known data</span>
+</div>
 <div class="app">
 
 <!-- HEADER -->
@@ -853,6 +885,7 @@ function drawLines(d){
   const fa=document.getElementById('fa');
   const svg=document.getElementById('flow-svg');
   const W=fa.offsetWidth,H=fa.offsetHeight;
+  if(!W||!H)return;  // layout not ready yet — skip silently
   const pos={hub:{x:W*.50,y:H*.50},solar:{x:W*.27,y:H*.23},grid:{x:W*.73,y:H*.23},batt:{x:W*.27,y:H*.77},load:{x:W*.73,y:H*.77}};
   const bc=d.batt_w<-15?'var(--green)':'var(--amber)';
   const gc=d.grid_w>15?'var(--gin)':d.grid_w<-15?'var(--gout)':'var(--muted)';
@@ -1542,6 +1575,40 @@ clockVisible = localStorage.getItem('sw_clock')=='1';
 applyClockState();
 
 loadSites();
+</script>
+<script>
+// ── PWA: Service Worker + offline banner ──────────────────────────────────────
+(function() {
+  const banner = document.getElementById('offline-banner');
+
+  function showOffline() {
+    if (banner) banner.classList.add('visible');
+  }
+  function showOnline() {
+    if (banner) {
+      banner.classList.remove('visible');
+    }
+  }
+
+  // Listen for messages from the service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'SW_OFFLINE') showOffline();
+      if (e.data && e.data.type === 'SW_ONLINE')  showOnline();
+    });
+
+    // Register the service worker
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+        .catch(err => console.warn('[SW] Registration failed:', err));
+    });
+  }
+
+  // Also listen to native online/offline as a belt-and-suspenders fallback
+  window.addEventListener('offline', showOffline);
+  window.addEventListener('online',  showOnline);
+})();
 </script>
 </body>
 </html>
