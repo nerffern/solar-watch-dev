@@ -1,0 +1,35 @@
+# ── solarwatch-powerflow.service ──────────────────────────────────────────────
+# Systemd unit for the SolarWatch live power flow web app (port 8765).
+# Runs independently of the collector — can be restarted without affecting data collection.
+#
+# Install: sudo cp solarwatch-powerflow.service /etc/systemd/system/
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now solarwatch-powerflow
+#
+# View logs: sudo journalctl -u solarwatch-powerflow -f
+
+[Unit]
+Description=SolarWatch Power Flow Web App
+After=network-online.target solarwatch.service
+Wants=network-online.target
+# Start after the collector but don't require it — web app works standalone
+BindsTo=
+
+[Service]
+Type=simple
+User=solarwatch
+Group=solarwatch
+WorkingDirectory=/opt/solarwatch
+ExecStart=/opt/solarwatch/venv/bin/python3 powerflow_server.py
+Restart=always
+RestartSec=10
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=solarwatch-powerflow
+
+# Shares the same env file as the collector
+EnvironmentFile=/opt/solarwatch/.env
+
+[Install]
+WantedBy=multi-user.target

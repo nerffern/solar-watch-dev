@@ -1,6 +1,12 @@
+# ── solarwatch.service ────────────────────────────────────────────────────────
+# Systemd unit for the SolarWatch inverter collector.
+# Install: sudo cp solarwatch.service /etc/systemd/system/
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now solarwatch
+
 [Unit]
 Description=SolarWatch Solar Inverter Collector
-After=network-online.target
+After=network-online.target postgresql.service
 Wants=network-online.target
 
 [Service]
@@ -11,6 +17,8 @@ WorkingDirectory=/opt/solarwatch
 ExecStart=/opt/solarwatch/venv/bin/python3 collector.py
 Restart=always
 RestartSec=15
+# Give the process up to 30s to shut down cleanly on SIGTERM before SIGKILL
+TimeoutStopSec=30
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=solarwatch

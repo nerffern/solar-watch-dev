@@ -10,6 +10,13 @@ Single process, runs on one central server.
 Site and inverter config is loaded from the `sites` table in the DB —
 no hardcoded IPs or serials in this file.
 
+Improvements over original:
+  1. DB pool reconnect on HA failover — pool rebuilt automatically after connection loss
+  2. Weather polled in a background thread — hangs/timeouts no longer block inverter polls
+  3. Sunsynk client cache pruned on config reload — stale clients for disabled sites removed
+  4. ON CONFLICT DO NOTHING on inserts — safe to restart mid-cycle without duplicate rows
+     (requires unique index on solar_readings(time, site_name, inverter_name) — see setup.sql)
+
 Systemd: solarwatch.service
 """
 
@@ -18,12 +25,13 @@ import sys
 import time
 import signal
 import logging
+import threading
 from datetime import datetime, timezone
 from typing import Optional
 
 import psycopg2
 import psycopg2.extras
-from psycopg2 import pool
+from psycopg2 import pool as pg_pool
 from dotenv import load_dotenv
 
 import deye_worker
@@ -53,39 +61,74 @@ log = logging.getLogger("solarwatch")
 POLL_INTERVAL    = int(os.getenv("POLL_INTERVAL",    "60"))
 MAX_RETRIES      = int(os.getenv("MAX_RETRIES",      "3"))
 RETRY_DELAY      = int(os.getenv("RETRY_DELAY",      "5"))
-CONFIG_RELOAD    = int(os.getenv("CONFIG_RELOAD",    "300"))   # re-read sites table every N seconds
-WEATHER_INTERVAL = int(os.getenv("WEATHER_INTERVAL", "900"))   # weather poll every 15 min
+CONFIG_RELOAD    = int(os.getenv("CONFIG_RELOAD",    "300"))
+WEATHER_INTERVAL = int(os.getenv("WEATHER_INTERVAL", "900"))
 
-PG_DSN = (
-    f"host={os.getenv('PG_HOST', 'postgres-ha.hfisystems.com')} "
-    f"port={os.getenv('PG_PORT', '5432')} "
-    f"dbname={os.getenv('PG_DB', 'solarwatch')} "
-    f"user={os.getenv('PG_USER', 'solarwatch_user')} "
-    f"password={os.getenv('PG_PASS', '')} "
-    f"connect_timeout=10 "
-    f"application_name=solarwatch_collector "
-    f"sslmode={os.getenv('PG_SSLMODE', 'prefer')}"
+PG_KWARGS = dict(
+    host=os.getenv("PG_HOST", "postgres-ha.hfisystems.com"),
+    port=int(os.getenv("PG_PORT", "5432")),
+    dbname=os.getenv("PG_DB", "solarwatch"),
+    user=os.getenv("PG_USER", "solarwatch_user"),
+    password=os.getenv("PG_PASS", ""),
+    connect_timeout=10,
+    application_name="solarwatch_collector",
+    sslmode=os.getenv("PG_SSLMODE", "prefer"),
 )
 
 # ── DATABASE ──────────────────────────────────────────────────────────────────
 
-db_pool: Optional[psycopg2.pool.ThreadedConnectionPool] = None
+_db_pool: Optional[psycopg2.pool.ThreadedConnectionPool] = None
+_db_lock = threading.Lock()
 
 
-def init_db_pool():
-    global db_pool
-    db_pool = psycopg2.pool.ThreadedConnectionPool(1, 10, PG_DSN)
+def _make_pool() -> psycopg2.pool.ThreadedConnectionPool:
+    p = pg_pool.ThreadedConnectionPool(1, 10, **PG_KWARGS)
     log.info(
         f"DB pool ready → "
-        f"{os.getenv('PG_HOST', 'postgres-ha.hfisystems.com')}:"
-        f"{os.getenv('PG_PORT','5432')}/solarwatch"
+        f"{PG_KWARGS['host']}:{PG_KWARGS['port']}/{PG_KWARGS['dbname']}"
     )
+    return p
+
+
+def get_pool() -> psycopg2.pool.ThreadedConnectionPool:
+    """Return the live pool, rebuilding it if it was closed after an HA failover."""
+    global _db_pool
+    with _db_lock:
+        if _db_pool is None or _db_pool.closed:
+            _db_pool = _make_pool()
+    return _db_pool
+
+
+def _db_conn():
+    """Context manager: yield a connection, return it to pool on exit.
+    On connection-level failure, close the pool so it rebuilds next call."""
+    pool = get_pool()
+    conn = pool.getconn()
+    try:
+        yield conn
+    except (psycopg2.OperationalError, psycopg2.InterfaceError) as exc:
+        log.warning(f"DB connection error (pool will reconnect): {exc}")
+        try:
+            pool.putconn(conn, close=True)
+        except Exception:
+            pass
+        # Invalidate pool so get_pool() rebuilds it
+        global _db_pool
+        with _db_lock:
+            _db_pool = None
+        raise
+    else:
+        pool.putconn(conn)
+
+
+# make it a proper context manager
+from contextlib import contextmanager
+_db_conn = contextmanager(_db_conn)
 
 
 def load_sites() -> tuple[list[dict], list[dict]]:
     """Returns (deye_sites, sunsynk_sites) from the sites table."""
-    conn = db_pool.getconn()
-    try:
+    with _db_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("""
                 SELECT site_name, display_name, source_type,
@@ -99,10 +142,12 @@ def load_sites() -> tuple[list[dict], list[dict]]:
             deye_sites    = [r for r in rows if r["source_type"] == "deye"]
             sunsynk_sites = [r for r in rows if r["source_type"] == "sunsynk"]
             return deye_sites, sunsynk_sites
-    finally:
-        db_pool.putconn(conn)
 
 
+# ON CONFLICT DO NOTHING requires the unique index:
+#   CREATE UNIQUE INDEX idx_sw_unique_reading
+#     ON solar_readings (time, site_name, inverter_name);
+# See setup.sql / migrate_indexes.sql
 INSERT_SQL = """
 INSERT INTO solar_readings (
     time, site_name, source_type, inverter_name, inverter_sn,
@@ -128,6 +173,7 @@ INSERT INTO solar_readings (
     %(daily_grid_import)s, %(daily_grid_export)s, %(daily_load_energy)s,
     %(poll_duration_ms)s, %(poll_success)s, %(ct_power)s, %(ct_load_power)s
 )
+ON CONFLICT (time, site_name, inverter_name) DO NOTHING
 """
 
 WEATHER_INSERT_SQL = """
@@ -144,12 +190,12 @@ INSERT INTO weather_readings (
     %(weather_code)s, %(uv_index)s, %(sunrise)s, %(sunset)s,
     %(solar_rad)s, %(is_day)s
 )
+ON CONFLICT DO NOTHING
 """
 
 
 def write_reading(site_name: str, inv_name: str, inv_sn: str, data: dict):
-    conn = db_pool.getconn()
-    try:
+    with _db_conn() as conn:
         with conn.cursor() as cur:
             row = {
                 "time":          datetime.now(timezone.utc),
@@ -160,27 +206,15 @@ def write_reading(site_name: str, inv_name: str, inv_sn: str, data: dict):
             }
             cur.execute(INSERT_SQL, row)
             conn.commit()
-    except Exception as e:
-        conn.rollback()
-        log.error(f"[{site_name}/{inv_name}] DB write failed: {e}")
-        raise
-    finally:
-        db_pool.putconn(conn)
 
 
 def write_weather(data: dict):
     """Insert one weather reading — strips internal _emoji/_description keys."""
-    conn = db_pool.getconn()
-    try:
+    with _db_conn() as conn:
         with conn.cursor() as cur:
             row = {k: v for k, v in data.items() if not k.startswith("_")}
             cur.execute(WEATHER_INSERT_SQL, row)
             conn.commit()
-    except Exception as e:
-        conn.rollback()
-        log.error(f"[weather/{data.get('site_name')}] DB write failed: {e}")
-    finally:
-        db_pool.putconn(conn)
 
 
 # ── DEYE POLLING ──────────────────────────────────────────────────────────────
@@ -222,24 +256,37 @@ def poll_deye_sites(sites: list[dict]):
 
 # ── SUNSYNK POLLING ───────────────────────────────────────────────────────────
 
+# Keyed by sunsynk_username — pruned on each config reload to remove
+# clients for sites that have been disabled.
 _sunsynk_clients: dict[str, sunsynk_worker.SunsynkClient] = {}
 
 
-def get_sunsynk_client(site: dict) -> sunsynk_worker.SunsynkClient:
-    key = site["sunsynk_username"]
-    if key not in _sunsynk_clients:
-        _sunsynk_clients[key] = sunsynk_worker.SunsynkClient(
-            site["sunsynk_username"],
-            site["sunsynk_password"],
-        )
-    return _sunsynk_clients[key]
+def _sync_sunsynk_clients(sunsynk_sites: list[dict]):
+    """
+    Keep _sunsynk_clients in sync with the currently enabled Sunsynk sites.
+    Creates new clients for new usernames; removes clients for usernames
+    that no longer appear in the enabled site list.
+    """
+    active_usernames = {s["sunsynk_username"] for s in sunsynk_sites}
+
+    # Remove stale clients
+    stale = [u for u in _sunsynk_clients if u not in active_usernames]
+    for u in stale:
+        log.info(f"Removing Sunsynk client for {u} (site disabled or removed)")
+        del _sunsynk_clients[u]
+
+    # Add new clients
+    for site in sunsynk_sites:
+        u = site["sunsynk_username"]
+        if u not in _sunsynk_clients:
+            _sunsynk_clients[u] = sunsynk_worker.SunsynkClient(u, site["sunsynk_password"])
 
 
 def poll_sunsynk_sites(sites: list[dict]):
     for site in sites:
         site_name = site["site_name"]
         try:
-            client   = get_sunsynk_client(site)
+            client   = _sunsynk_clients[site["sunsynk_username"]]
             readings = sunsynk_worker.poll(site, client)
             for reading in readings:
                 if not running:
@@ -258,34 +305,46 @@ def poll_sunsynk_sites(sites: list[dict]):
 
 
 # ── WEATHER POLLING ───────────────────────────────────────────────────────────
+#
+# Weather runs in a daemon thread so a slow/hung Open-Meteo request (up to
+# 10s timeout) never blocks the inverter poll cycle.
 
-# Tracks last weather poll time per site (monotonic seconds)
 _last_weather: dict[str, float] = {}
+_weather_lock = threading.Lock()
 
 
-def poll_weather(all_sites: list[dict]):
-    """
-    Poll Open-Meteo for every site that has lat/lon set and whose last
-    weather fetch is older than WEATHER_INTERVAL.
-    Silently skips sites with no coordinates configured.
-    """
+def _weather_thread_fn(sites: list[dict]):
+    """Run one weather poll pass — called from a background daemon thread."""
     now = time.monotonic()
-    for site in all_sites:
+    for site in sites:
         site_name = site["site_name"]
         lat = site.get("latitude")
         lon = site.get("longitude")
-
         if lat is None or lon is None:
-            continue  # coordinates not set yet — skip silently
-
-        last = _last_weather.get(site_name, 0)
+            continue
+        with _weather_lock:
+            last = _last_weather.get(site_name, 0)
         if now - last < WEATHER_INTERVAL:
-            continue  # not due yet
-
+            continue
         data = weather_worker.fetch(site_name, float(lat), float(lon))
         if data:
-            write_weather(data)
-            _last_weather[site_name] = now
+            try:
+                write_weather(data)
+                with _weather_lock:
+                    _last_weather[site_name] = now
+            except Exception as e:
+                log.error(f"[weather/{site_name}] write failed: {e}")
+
+
+def poll_weather_async(all_sites: list[dict]):
+    """Fire weather polling in a background thread — non-blocking."""
+    t = threading.Thread(
+        target=_weather_thread_fn,
+        args=(all_sites,),
+        daemon=True,
+        name="weather-poll",
+    )
+    t.start()
 
 
 # ── GRACEFUL SHUTDOWN ─────────────────────────────────────────────────────────
@@ -313,7 +372,12 @@ def main():
     log.info(f"Weather interval : every {WEATHER_INTERVAL}s")
     log.info("=" * 60)
 
-    init_db_pool()
+    # Initialise pool — fail fast if DB is unreachable at startup
+    try:
+        get_pool()
+    except Exception as e:
+        log.error(f"DB connection failed at startup: {e}")
+        sys.exit(1)
 
     deye_sites    = []
     sunsynk_sites = []
@@ -332,6 +396,8 @@ def main():
                     f"Deye: {[s['site_name'] for s in deye_sites]} | "
                     f"Sunsynk: {[s['site_name'] for s in sunsynk_sites]}"
                 )
+                # Sync Sunsynk client cache with current enabled sites
+                _sync_sunsynk_clients(sunsynk_sites)
             except Exception as e:
                 log.error(f"Failed to load sites: {e}")
 
@@ -343,10 +409,10 @@ def main():
         if sunsynk_sites:
             poll_sunsynk_sites(sunsynk_sites)
 
-        # Poll weather for all sites that have coordinates set
+        # Weather in background thread — never blocks the poll cycle
         all_sites = deye_sites + sunsynk_sites
         if all_sites:
-            poll_weather(all_sites)
+            poll_weather_async(all_sites)
 
         elapsed    = time.monotonic() - cycle_start
         sleep_time = max(0, POLL_INTERVAL - elapsed)
@@ -356,8 +422,9 @@ def main():
         while running and time.monotonic() < deadline:
             time.sleep(1)
 
-    if db_pool:
-        db_pool.closeall()
+    global _db_pool
+    if _db_pool:
+        _db_pool.closeall()
     log.info("SolarWatch collector stopped cleanly")
 
 

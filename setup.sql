@@ -123,6 +123,13 @@ CREATE INDEX idx_sw_time           ON solar_readings (time DESC);
 CREATE INDEX idx_sw_source_type    ON solar_readings (source_type, time DESC);
 CREATE INDEX idx_wx_site_time      ON weather_readings (site_name, time DESC);
 
+-- Unique indexes — enforce one reading per (timestamp, site, inverter/site).
+-- Required for ON CONFLICT DO NOTHING in collector.py (safe mid-cycle restarts).
+CREATE UNIQUE INDEX idx_sw_unique_reading
+    ON solar_readings (time, site_name, inverter_name);
+CREATE UNIQUE INDEX idx_wx_unique_reading
+    ON weather_readings (time, site_name);
+
 -- ── 8. Seed sites ─────────────────────────────────────────────────────────────
 
 INSERT INTO sites (site_name, display_name, source_type, location, latitude, longitude, inverters)
