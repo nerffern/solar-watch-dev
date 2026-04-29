@@ -12,8 +12,6 @@
 Description=SolarWatch Power Flow Web App
 After=network-online.target solarwatch.service
 Wants=network-online.target
-# Start after the collector but don't require it — web app works standalone
-BindsTo=
 
 [Service]
 Type=simple
@@ -24,6 +22,9 @@ ExecStart=/opt/solarwatch/venv/bin/python3 powerflow_server.py
 Restart=always
 RestartSec=10
 TimeoutStopSec=15
+# Kill the entire process group on stop — prevents orphaned uvicorn workers
+# holding the port after a failed restart cycle
+KillMode=mixed
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=solarwatch-powerflow
